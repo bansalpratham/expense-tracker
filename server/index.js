@@ -1,11 +1,10 @@
 import express from 'express'
 import cors from 'cors'
-import dotenv from 'dotenv'
+import "dotenv/config";
 import pool from './db/db.js'
 import router from './routes/userRoutes.js'
 import router1 from './routes/authRoutes.js'
 
-dotenv.config()
 
 const app = express()
 

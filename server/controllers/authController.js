@@ -1,6 +1,8 @@
 import pool from "../db/db.js";
 import bcrypt from 'bcrypt'
 import jwt from "jsonwebtoken";
+import admin from "../config/firebaseAdmin.js";
+import { getAuth } from "firebase-admin/auth";
 
 const SignUp = async (req,res)=>{
 try {
@@ -45,6 +47,7 @@ return res.status(200).json(result.rows)
 }
 
 }
+
 
 const SignIn = async (req,res)=>{
 try {
@@ -96,4 +99,82 @@ try {
 
 }
 
-export {SignUp , SignIn };
+
+const SignInWithGoogle = async (req, res) => {
+    try {
+
+        const { idToken } = req.body;
+
+        if (!idToken) {
+            return res.status(400).json("Google ID Token Required");
+        }
+
+        const decodedToken = await getAuth().verifyIdToken(idToken);
+
+        const googleId = decodedToken.uid;
+        const email = decodedToken.email;
+        const userName = decodedToken.name || email.split("@")[0];
+
+        if (!email) {
+            return res.status(400).json("Google account email not found");
+        }
+
+        const existingUser = await pool.query(
+            "SELECT * FROM users WHERE email=$1",
+            [email]
+        );
+
+        let user;
+
+        if (existingUser.rows.length === 0) {
+
+            const result = await pool.query(
+                `INSERT INTO users (username, email, password, google_id)
+                 VALUES ($1, $2, $3, $4)
+                 RETURNING id, username, email, google_id`,
+                [userName, email, null, googleId]
+            );
+
+            user = result.rows[0];
+
+        } else {
+
+            user = existingUser.rows[0];
+
+            if (!user.google_id) {
+
+                const result = await pool.query(
+                    `UPDATE users
+                     SET google_id=$1
+                     WHERE id=$2
+                     RETURNING id, username, email, google_id`,
+                    [googleId, user.id]
+                );
+
+                user = result.rows[0];
+            }
+        }
+
+        const token = jwt.sign(
+            { id: user.id },
+            process.env.JWT_SECRET,
+            { expiresIn: "1d" }
+        );
+
+        return res.status(200).json({
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            token: token
+        });
+
+    } catch (error) {
+        console.error(error);
+        return res.status(401).json({
+            error: "Google authentication failed"
+        });
+    }
+}
+
+
+export {SignUp , SignIn, SignInWithGoogle };
