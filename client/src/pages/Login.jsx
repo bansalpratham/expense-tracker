@@ -480,7 +480,7 @@ function LoginForm({
         Don't have an account?{" "}
 
         <a
-          href="#"
+          href="/signup"
           className="rounded-sm font-semibold text-[var(--ef-primary)] underline-offset-4 outline-none transition-colors hover:text-[color-mix(in_oklch,var(--ef-primary)_80%,transparent)] hover:underline"
         >
           Sign Up

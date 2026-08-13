@@ -1,9 +1,6 @@
 import { useState } from "react"
 import axios from "axios"
-import {
-  signInWithPopup,
-  GoogleAuthProvider
-} from "firebase/auth"
+import { signInWithPopup, GoogleAuthProvider } from "firebase/auth"
 import { auth } from "../firebase.js"
 
 /**
@@ -22,7 +19,7 @@ export default function Signup() {
 
 
   // --------------------------------------------------------------------------
-  // Normal Username + Email + Password Signup
+  // Normal Email + Password Signup
   // --------------------------------------------------------------------------
 
   const handleSubmit = async (event) => {
@@ -52,6 +49,7 @@ export default function Signup() {
 
 
     // Frontend validation
+
     if (
       !username ||
       !email ||
@@ -111,27 +109,26 @@ export default function Signup() {
       )
 
 
-      // Backend JWT
-      const token = response.data.token
+      /*
+       * If your signup backend returns a JWT,
+       * store it exactly like Login.
+       *
+       * Example backend response:
+       *
+       * {
+       *   token,
+       *   id,
+       *   username,
+       *   email
+       * }
+       */
 
-
-      // Store JWT
-      if (token) {
+      if (response.data.token) {
 
         localStorage.setItem(
           "token",
-          token
+          response.data.token
         )
-
-      }
-
-
-      // Store user information
-      if (
-        response.data.id ||
-        response.data.username ||
-        response.data.email
-      ) {
 
         localStorage.setItem(
           "user",
@@ -153,8 +150,14 @@ export default function Signup() {
       alert("Account created successfully!")
 
 
-      // Later:
-      // navigate("/dashboard")
+      /*
+       * If you are using React Router,
+       * navigate to Login here.
+       *
+       * For now we use window.location.
+       */
+
+      window.location.href = "/"
 
     } catch (error) {
 
@@ -186,6 +189,7 @@ export default function Signup() {
       setLoading(false)
 
     }
+
   }
 
 
@@ -200,12 +204,11 @@ export default function Signup() {
 
     try {
 
-      // 1. Create Google provider
+      // 1. Open Google login popup
+
       const provider =
         new GoogleAuthProvider()
 
-
-      // 2. Open Google login popup
       const result =
         await signInWithPopup(
           auth,
@@ -213,17 +216,18 @@ export default function Signup() {
         )
 
 
-      // 3. Get Firebase ID token
+      // 2. Get Firebase ID token
+
       const idToken =
         await result.user.getIdToken()
-
 
       console.log(
         "Firebase ID Token received"
       )
 
 
-      // 4. Send Firebase token to backend
+      // 3. Send Firebase token to backend
+
       const response =
         await axios.post(
           "http://localhost:3000/auth/google",
@@ -239,40 +243,39 @@ export default function Signup() {
       )
 
 
-      // 5. Backend gives us OUR JWT
+      // 4. Backend gives us OUR JWT
+
       const token =
         response.data.token
 
-
-      // Store JWT
       localStorage.setItem(
         "token",
         token
       )
 
 
-      // Store user information
+      // 5. Store user information
+
       localStorage.setItem(
         "user",
         JSON.stringify({
           id: response.data.id,
-          username:
-            response.data.username ||
-            response.data.userName,
-          email:
-            response.data.email ||
-            result.user.email
+          username: response.data.username,
+          email: response.data.email
         })
       )
 
 
       alert(
-        "Google signup successful!"
+        "Google account created successfully!"
       )
 
 
-      // Later:
+      // Go to dashboard later
+
       // navigate("/dashboard")
+
+      window.location.href = "/"
 
     } catch (error) {
 
@@ -304,6 +307,7 @@ export default function Signup() {
       setGoogleLoading(false)
 
     }
+
   }
 
 
@@ -328,7 +332,6 @@ export default function Signup() {
         {/* Signup section */}
 
         <section className="relative flex flex-col items-center justify-center px-5 py-10 sm:px-8">
-
 
           <div
             aria-hidden="true"
@@ -355,15 +358,21 @@ export default function Signup() {
             <div className="w-full rounded-[1.925rem] border border-[color-mix(in_oklch,var(--ef-border)_70%,transparent)] bg-[color-mix(in_oklch,var(--ef-card)_95%,transparent)] p-7 shadow-[0_1px_0_0_rgba(255,255,255,0.6)_inset,0_12px_40px_-12px_rgba(16,40,34,0.18)] backdrop-blur-sm sm:p-9">
 
               <SignupForm
+
                 showPassword={showPassword}
                 setShowPassword={setShowPassword}
+
                 showConfirm={showConfirm}
                 setShowConfirm={setShowConfirm}
+
                 handleSubmit={handleSubmit}
                 handleGoogleSignUp={handleGoogleSignUp}
+
                 loading={loading}
                 googleLoading={googleLoading}
+
                 error={error}
+
               />
 
             </div>
@@ -400,12 +409,14 @@ export default function Signup() {
       </main>
 
     </div>
+
   )
+
 }
 
 
 /* -------------------------------------------------------------------------- */
-/* Signup Form                                                                */
+/* Signup form                                                                */
 /* -------------------------------------------------------------------------- */
 
 function SignupForm({
@@ -459,9 +470,22 @@ function SignupForm({
 
       {error && (
 
-        <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+        <div
+          role="alert"
+          className="mb-5 flex items-start gap-2.5 rounded-[1.225rem] border border-[color-mix(in_oklch,var(--ef-destructive)_35%,transparent)] bg-[color-mix(in_oklch,var(--ef-destructive)_10%,transparent)] px-4 py-3 text-sm text-[var(--ef-destructive)]"
+        >
 
-          {error}
+          <span className="mt-0.5 shrink-0">
+
+            <IconAlert />
+
+          </span>
+
+          <span className="leading-relaxed">
+
+            {error}
+
+          </span>
 
         </div>
 
@@ -520,7 +544,7 @@ function SignupForm({
         />
 
 
-        {/* Confirm Password */}
+        {/* Confirm password */}
 
         <PasswordField
           id="confirmPassword"
@@ -542,13 +566,17 @@ function SignupForm({
         <button
           type="submit"
           disabled={loading}
-          className="h-11 w-full rounded-[1.225rem] bg-[var(--ef-primary)] text-sm font-semibold text-[var(--ef-primary-foreground)] shadow-sm outline-none transition-all hover:-translate-y-0.5 hover:bg-[color-mix(in_oklch,var(--ef-primary)_92%,black)] hover:shadow-md active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60"
+          className="flex h-11 w-full items-center justify-center gap-2 rounded-[1.225rem] bg-[var(--ef-primary)] text-sm font-semibold text-[var(--ef-primary-foreground)] shadow-sm outline-none transition-all hover:-translate-y-0.5 hover:bg-[color-mix(in_oklch,var(--ef-primary)_92%,black)] hover:shadow-md active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-70"
         >
 
-          {loading
-            ? "Creating account..."
-            : "Create Account"
-          }
+          {loading ? (
+            <>
+              <Spinner />
+              Creating account...
+            </>
+          ) : (
+            "Create Account"
+          )}
 
         </button>
 
@@ -587,7 +615,7 @@ function SignupForm({
         <GoogleIcon />
 
         {googleLoading
-          ? "Signing up with Google..."
+          ? "Signing in with Google..."
           : "Continue with Google"
         }
 
@@ -601,16 +629,20 @@ function SignupForm({
         Already have an account?{" "}
 
         <a
-          href="#"
+          href="/"
           className="rounded-sm font-semibold text-[var(--ef-primary)] underline-offset-4 outline-none transition-colors hover:text-[color-mix(in_oklch,var(--ef-primary)_80%,transparent)] hover:underline"
         >
+
           Sign In
+
         </a>
 
       </p>
 
     </div>
+
   )
+
 }
 
 
@@ -655,7 +687,9 @@ function Field({
       </div>
 
     </div>
+
   )
+
 }
 
 
@@ -681,7 +715,9 @@ function PasswordField({
         htmlFor={id}
         className="text-sm font-medium text-[var(--ef-foreground)]"
       >
+
         {label}
+
       </label>
 
 
@@ -726,12 +762,14 @@ function PasswordField({
       </div>
 
     </div>
+
   )
+
 }
 
 
 /* -------------------------------------------------------------------------- */
-/* Brand panel                                                                */
+/* Brand Panel                                                                */
 /* -------------------------------------------------------------------------- */
 
 function BrandPanel() {
@@ -739,7 +777,6 @@ function BrandPanel() {
   return (
 
     <div className="relative flex h-full flex-col justify-between overflow-hidden bg-[var(--ef-primary)] p-10 text-[var(--ef-primary-foreground)] xl:p-14">
-
 
       <div className="relative">
 
@@ -836,7 +873,9 @@ function BrandPanel() {
       </div>
 
     </div>
+
   )
+
 }
 
 
@@ -848,7 +887,6 @@ function Sparkline() {
 
   const points =
     "0,26 14,22 28,25 42,16 56,19 70,11 84,14 98,6 112,9 126,3"
-
 
   return (
 
@@ -867,7 +905,6 @@ function Sparkline() {
         strokeLinejoin="round"
       />
 
-
       <polygon
         points={`${points} 126,30 0,30`}
         fill="currentColor"
@@ -875,12 +912,14 @@ function Sparkline() {
       />
 
     </svg>
+
   )
+
 }
 
 
 /* -------------------------------------------------------------------------- */
-/* Stat card                                                                  */
+/* Stat Card                                                                  */
 /* -------------------------------------------------------------------------- */
 
 function StatCard({
@@ -914,7 +953,9 @@ function StatCard({
       </p>
 
     </div>
+
   )
+
 }
 
 
@@ -951,7 +992,9 @@ function Logo({
       )}
 
     </div>
+
   )
+
 }
 
 
@@ -983,7 +1026,9 @@ function Svg({
       {children}
 
     </svg>
+
   )
+
 }
 
 
@@ -1006,7 +1051,9 @@ function IconUser() {
       />
 
     </Svg>
+
   )
+
 }
 
 
@@ -1027,7 +1074,9 @@ function IconMail() {
       <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
 
     </Svg>
+
   )
+
 }
 
 
@@ -1049,7 +1098,9 @@ function IconLock() {
       <path d="M7 11V7a5 5 0 0 1 10 0v4" />
 
     </Svg>
+
   )
+
 }
 
 
@@ -1068,7 +1119,9 @@ function IconEye() {
       />
 
     </Svg>
+
   )
+
 }
 
 
@@ -1082,12 +1135,14 @@ function IconEyeOff() {
 
       <path d="M14.084 14.158a3 3 0 0 1-4.242-4.242" />
 
-      <path d="M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 1 1 0 0 1-1.444 2.49" />
+      <path d="M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143" />
 
       <path d="m2 2 20 20" />
 
     </Svg>
+
   )
+
 }
 
 
@@ -1102,7 +1157,9 @@ function IconWallet() {
       <path d="M18 12a2 2 0 0 0 0 4h4v-4Z" />
 
     </Svg>
+
   )
+
 }
 
 
@@ -1117,7 +1174,9 @@ function IconArrowUpRight() {
       <path d="M7 17 17 7" />
 
     </Svg>
+
   )
+
 }
 
 
@@ -1132,7 +1191,9 @@ function IconTrendingUp() {
       <polyline points="16 7 22 7 22 13" />
 
     </Svg>
+
   )
+
 }
 
 
@@ -1155,7 +1216,9 @@ function IconCoins() {
       <path d="m16.71 13.88.7.71-2.82 2.82" />
 
     </Svg>
+
   )
+
 }
 
 
@@ -1170,7 +1233,67 @@ function IconShieldCheck() {
       <path d="m9 12 2 2 4-4" />
 
     </Svg>
+
   )
+
+}
+
+
+function IconAlert() {
+
+  return (
+
+    <Svg>
+
+      <circle
+        cx="12"
+        cy="12"
+        r="10"
+      />
+
+      <line
+        x1="12"
+        x2="12"
+        y1="8"
+        y2="12"
+      />
+
+      <line
+        x1="12"
+        x2="12.01"
+        y1="16"
+        y2="16"
+      />
+
+    </Svg>
+
+  )
+
+}
+
+
+function Spinner() {
+
+  return (
+
+    <svg
+      className="ef-spin"
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      aria-hidden="true"
+    >
+
+      <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+
+    </svg>
+
+  )
+
 }
 
 
@@ -1206,7 +1329,9 @@ function GoogleIcon() {
       />
 
     </svg>
+
   )
+
 }
 
 
@@ -1228,22 +1353,25 @@ function ScopedStyles() {
         --ef-background: oklch(0.977 0.006 240);
         --ef-foreground: oklch(0.21 0.03 250);
         --ef-card: oklch(1 0 0);
+
         --ef-primary: oklch(0.58 0.13 163);
         --ef-primary-foreground: oklch(0.99 0.01 160);
+
         --ef-secondary: oklch(0.96 0.01 240);
         --ef-muted: oklch(0.965 0.006 240);
+
         --ef-muted-foreground: oklch(0.53 0.02 250);
+
         --ef-accent: oklch(0.95 0.03 165);
         --ef-accent-foreground: oklch(0.35 0.08 163);
+
         --ef-border: oklch(0.92 0.008 240);
         --ef-input: oklch(0.92 0.008 240);
         --ef-ring: oklch(0.58 0.13 163);
 
-        font-family:
-          'Inter',
-          ui-sans-serif,
-          system-ui,
-          sans-serif;
+        --ef-destructive: oklch(0.577 0.245 27.325);
+
+        font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
 
         -webkit-font-smoothing: antialiased;
         text-rendering: optimizeLegibility;
@@ -1267,16 +1395,23 @@ function ScopedStyles() {
 
         height: 2.75rem;
         width: 100%;
+
         border-radius: 1.225rem;
+
         border: 1px solid var(--ef-input);
+
         background: var(--ef-card);
+
         padding-left: 2.5rem;
         padding-right: 0.75rem;
+
         font-size: 0.875rem;
+
         color: var(--ef-foreground);
 
         box-shadow:
-          0 1px 2px rgba(16, 40, 34, 0.05);
+          0 1px 2px
+          rgba(16, 40, 34, 0.05);
 
         transition:
           color 0.2s,
@@ -1327,7 +1462,10 @@ function ScopedStyles() {
       .ef-animate-in {
 
         animation:
-          ef-fade-in 0.7s ease-out both;
+          ef-fade-in
+          0.7s
+          ease-out
+          both;
 
       }
 
@@ -1352,6 +1490,29 @@ function ScopedStyles() {
       }
 
 
+      .ef-spin {
+
+        animation:
+          ef-spin
+          0.7s
+          linear
+          infinite;
+
+      }
+
+
+      @keyframes ef-spin {
+
+        to {
+
+          transform:
+            rotate(360deg);
+
+        }
+
+      }
+
+
       @media (prefers-reduced-motion: reduce) {
 
         .ef-animate-in {
@@ -1360,8 +1521,17 @@ function ScopedStyles() {
 
         }
 
+        .ef-spin {
+
+          animation-duration:
+            1.4s;
+
+        }
+
       }
 
     `}</style>
+
   )
+
 }
