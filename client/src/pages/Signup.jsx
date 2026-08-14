@@ -2,12 +2,15 @@ import { useState } from "react"
 import axios from "axios"
 import { signInWithPopup, GoogleAuthProvider } from "firebase/auth"
 import { auth } from "../firebase.js"
+import { useNavigate } from "react-router-dom"
 
 /**
  * ExpenseFlow — Signup page
  * Vite + React
  */
 export default function Signup() {
+
+  const navigate = useNavigate()
 
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
@@ -94,7 +97,7 @@ export default function Signup() {
     try {
 
       const response = await axios.post(
-        "http://localhost:3000/auth/signup",
+        "http://localhost:5000/auth/signup",
         {
           userName: username,
           email,
@@ -157,7 +160,7 @@ export default function Signup() {
        * For now we use window.location.
        */
 
-      window.location.href = "/"
+      navigate("/home")
 
     } catch (error) {
 
@@ -230,7 +233,7 @@ export default function Signup() {
 
       const response =
         await axios.post(
-          "http://localhost:3000/auth/google",
+          "http://localhost:5000/auth/google",
           {
             idToken
           }
@@ -265,17 +268,7 @@ export default function Signup() {
         })
       )
 
-
-      alert(
-        "Google account created successfully!"
-      )
-
-
-      // Go to dashboard later
-
-      // navigate("/dashboard")
-
-      window.location.href = "/"
+      navigate("/home")
 
     } catch (error) {
 

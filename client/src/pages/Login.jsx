@@ -2,12 +2,15 @@ import { useState } from "react"
 import axios from "axios"
 import { signInWithPopup, GoogleAuthProvider } from "firebase/auth"
 import { auth } from "../firebase.js"
+import { useNavigate } from "react-router-dom"
 
 /**
  * ExpenseFlow — Login page
  * Vite + React
  */
 export default function Login() {
+
+  const navigate = useNavigate()
 
   const [showPassword, setShowPassword] = useState(false)
 
@@ -32,7 +35,7 @@ export default function Login() {
     try {
 
       const response = await axios.post(
-        "http://localhost:3000/auth/signin",
+        "http://localhost:5000/auth/signin",
         {
           email,
           password
@@ -58,8 +61,7 @@ export default function Login() {
 
       alert("Login successful!")
 
-      // Later:
-      // navigate("/dashboard")
+      navigate("/home")
 
     } catch (error) {
 
@@ -112,7 +114,7 @@ export default function Login() {
 
       // 3. Send Firebase token to our backend
       const response = await axios.post(
-        "http://localhost:3000/auth/google",
+        "http://localhost:5000/auth/google",
         {
           idToken
         }
@@ -145,8 +147,7 @@ export default function Login() {
 
       alert("Google login successful!")
 
-      // Later:
-      // navigate("/dashboard")
+      navigate("/home")
 
     } catch (error) {
 
