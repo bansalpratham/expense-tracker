@@ -1,3 +1,5 @@
+import pool from "../db/db.js"
+
 const addBudget = async (req,res)=>{
     try {
         const userId = req.user.id
@@ -12,9 +14,39 @@ const addBudget = async (req,res)=>{
             return res.status(400).json("User didn't found")
         }
 
-        
+        const {amount,type} = req.body;
+
+        if (!amount)
+        {
+            return res.status(400).json("Amount didn't found")
+        }
+
+        if (!type)
+        {
+            return res.status(400).json("Type didn't found")
+        }
+
+        const result = await pool.query(
+    "SELECT * FROM budget WHERE user_id=$1 AND type=$2",
+    [userId, type]
+)
+
+        if (result.rows.length>0)
+        {
+            return res.status(400).json("Budget already exists")
+        }
+
+        const result = await pool.query(
+    `INSERT INTO budget(amount, type, user_id)
+     VALUES($1, $2, $3)
+     RETURNING id, amount, type, user_id`,
+    [amount, type, userId]
+)
+
+        return res.status(201).json(result.rows[0]);
 
     } catch (error) {
-        
+        console.error(error);
+    res.status(500).json({ error: "addBudget Error" });
     }
 }
