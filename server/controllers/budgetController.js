@@ -114,4 +114,44 @@ const deleteBudget = async (req, res) => {
     }
 }
 
-export { addBudget , getBudget  , deleteBudget }
+const updateBudget = async(req,res)=>{
+    try {
+        const {budgetId} = req.params
+
+        const userId = req.user.id
+
+        if (!userId) {
+            return res.status(400).json("UserId didn't found")
+        }
+
+        if (!budgetId) {
+            return res.status(400).json("BudgetId didn't found")
+        }
+
+        const { amount } = req.body
+
+        if (!amount) {
+            return res.status(400).json("Amount didn't found")
+        }  
+        
+        const result = await pool.query(
+    `UPDATE budget
+     SET amount=$1
+     WHERE id=$2 AND user_id=$3
+     RETURNING id, amount, type, user_id`,
+    [amount, budgetId, userId]
+)
+
+if (result.rows.length === 0) {
+    return res.status(404).json("Budget not found")
+}
+
+return res.status(200).json(result.rows[0])
+
+    } catch (error) {
+           console.error(error)
+        return res.status(500).json({ error: "UpdateBudget Error" })
+    }
+}
+
+export { addBudget , getBudget  , deleteBudget , updateBudget }
