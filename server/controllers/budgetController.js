@@ -1,6 +1,6 @@
 import pool from "../db/db.js"
 
-const addBudget = async (req,res)=>{
+const addBudget = async (req, res) => {
     try {
         const userId = req.user.id
 
@@ -8,45 +8,110 @@ const addBudget = async (req,res)=>{
             return res.status(400).json("UserId didn't found")
         }
 
-        const user = await pool.query("SELECT * FROM users WHERE id=$1", [userId])
+        const user = await pool.query(
+            "SELECT * FROM users WHERE id=$1",
+            [userId]
+        )
 
         if (user.rows.length === 0) {
             return res.status(400).json("User didn't found")
         }
 
-        const {amount,type} = req.body;
+        const { amount, type } = req.body
 
-        if (!amount)
-        {
+        if (!amount) {
             return res.status(400).json("Amount didn't found")
         }
 
-        if (!type)
-        {
+        if (!type) {
             return res.status(400).json("Type didn't found")
         }
 
-        const result = await pool.query(
-    "SELECT * FROM budget WHERE user_id=$1 AND type=$2",
-    [userId, type]
-)
+        const existingBudget = await pool.query(
+            "SELECT * FROM budget WHERE user_id=$1 AND type=$2",
+            [userId, type]
+        )
 
-        if (result.rows.length>0)
-        {
+        if (existingBudget.rows.length > 0) {
             return res.status(400).json("Budget already exists")
         }
 
         const result = await pool.query(
-    `INSERT INTO budget(amount, type, user_id)
-     VALUES($1, $2, $3)
-     RETURNING id, amount, type, user_id`,
-    [amount, type, userId]
-)
+            `INSERT INTO budget(amount, type, user_id)
+             VALUES($1, $2, $3)
+             RETURNING id, amount, type, user_id`,
+            [amount, type, userId]
+        )
 
-        return res.status(201).json(result.rows[0]);
+        return res.status(201).json(result.rows[0])
 
     } catch (error) {
-        console.error(error);
-    res.status(500).json({ error: "addBudget Error" });
+        console.error(error)
+        return res.status(500).json({ error: "AddBudget Error" })
     }
 }
+
+const getBudget = async (req, res) => {
+    try {
+        const userId = req.user.id
+
+        if (!userId) {
+            return res.status(400).json("UserId didn't found")
+        }
+
+        const user = await pool.query(
+            "SELECT * FROM users WHERE id=$1",
+            [userId]
+        )
+
+        if (user.rows.length === 0) {
+            return res.status(400).json("User didn't found")
+        }
+
+        const result = await pool.query(
+    "SELECT * FROM budget WHERE user_id=$1",
+    [userId]
+)
+
+        return res.status(200).json(result.rows)
+
+    } catch (error) {
+        console.error(error)
+        res.status(500).json({ error: "GetBudget Error" })
+    }
+}
+
+const deleteBudget = async (req, res) => {
+    try {
+        const { budgetId } = req.params
+
+        const userId = req.user.id
+
+        if (!userId) {
+            return res.status(400).json("UserId didn't found")
+        }
+
+        if (!budgetId) {
+            return res.status(400).json("BudgetId didn't found")
+        }
+
+        const result = await pool.query(
+            `DELETE FROM budget
+             WHERE id=$1 AND user_id=$2
+             RETURNING id, amount, type, user_id`,
+            [budgetId, userId]
+        )
+
+        if (result.rows.length === 0) {
+            return res.status(404).json("Budget not found")
+        }
+
+        return res.status(200).json(result.rows[0])
+
+    } catch (error) {
+        console.error(error)
+        return res.status(500).json({ error: "DeleteBudget Error" })
+    }
+}
+
+export { addBudget , getBudget  , deleteBudget }
