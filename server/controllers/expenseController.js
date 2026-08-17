@@ -170,8 +170,72 @@ const getDashboard = async (req,res)=>{
     [userId]
 )
 
+const monthlyBudget = await pool.query(
+    "SELECT amount FROM budget WHERE user_id=$1 AND type=$2",
+    [userId, "monthly"]
+)
+
+const monthlySpending = await pool.query(
+    `SELECT SUM(amount) AS monthly_spending
+     FROM expenses
+     WHERE user_id=$1
+     AND DATE_TRUNC('month', date) = DATE_TRUNC('month', CURRENT_DATE)`,
+    [userId]
+)
+
+const totalSpending =
+    Number(result.rows[0].total_spending || 0)
+
+const monthlyBudgetAmount =
+    Number(monthlyBudget.rows[0]?.amount || 0)
+
+const monthlySpendingAmount =
+    Number(monthlySpending.rows[0].monthly_spending || 0)
+
+    const monthlyRemaining =
+    monthlyBudgetAmount - monthlySpendingAmount
+
+    const weeklyBudget = await pool.query(
+    "SELECT amount FROM budget WHERE user_id=$1 AND type=$2",
+    [userId, "weekly"]
+)
+
+const weeklyBudgetAmount =
+    Number(weeklyBudget.rows[0]?.amount || 0)
+
+    const weeklySpending = await pool.query(
+    `SELECT SUM(amount) AS weekly_spending
+     FROM expenses
+     WHERE user_id=$1
+     AND DATE_TRUNC('week', date) = DATE_TRUNC('week', CURRENT_DATE)`,
+    [userId]
+)
+
+const weeklySpendingAmount =
+    Number(weeklySpending.rows[0].weekly_spending || 0)
+
+    const weeklyRemaining =
+    weeklyBudgetAmount - weeklySpendingAmount
+
+return res.status(200).json({
+    totalSpending,
+    
+    monthly: {
+        budget: monthlyBudgetAmount,
+        spending: monthlySpendingAmount,
+        remaining: monthlyRemaining
+    },
+
+    weekly: {
+        budget: weeklyBudgetAmount,
+        spending: weeklySpendingAmount,
+        remaining: weeklyRemaining
+    }
+})
+
     } catch (error) {
-        
+        console.error(error);
+    res.status(500).json({ error: "getDashBoard Error" });
     }
 }
 
