@@ -212,7 +212,7 @@ const weeklyBudgetAmount =
 )
 
 const weeklySpendingAmount =
-    Number(weeklySpending.rows[0].weekly_spending || 0)
+    Number(weeklySpending.rows[0]?.weekly_spending || 0)
 
     const weeklyRemaining =
     weeklyBudgetAmount - weeklySpendingAmount
