@@ -7,6 +7,6 @@ const router4 = Router()
 router4.post("/addBudget" , authMiddleware , addBudget);
 router4.get("/getBudget" , authMiddleware , getBudget);
 router4.delete("/deleteBudget/:budgetId" , authMiddleware , deleteBudget);
-router.put("/updateBudget/:budgetId", authMiddleware, updateBudget)
+router4.put("/updateBudget/:budgetId", authMiddleware, updateBudget)
 
 export default router4

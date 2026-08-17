@@ -1,3 +1,5 @@
+import pool from "../db/db.js"
+
 const addExpense = async (req, res) => {
     try {
         const userId = req.user.id
@@ -114,4 +116,63 @@ return res.status(200).json(result.rows[0])
     }
 }
 
-export { addExpense , getExpense , deleteExpense };
+const getExpenseByDate = async (req,res)=>{
+    try {
+         const userId = req.user.id
+
+        if (!userId)
+        {
+           return res.status(400).json("UserId didn't found")
+        }
+
+        const {startDate , endDate} = req.query
+
+        if (!startDate)
+        {
+            return res.status(400).json("startDate not provided")
+        }
+
+         if (!endDate)
+        {
+            return res.status(400).json("endDate not provided")
+        }
+
+        const result = await pool.query(
+    `SELECT * FROM expenses
+     WHERE user_id=$1
+     AND date BETWEEN $2 AND $3`,
+    [userId, startDate, endDate]
+)
+
+         if (result.rows.length === 0)
+{
+    return res.status(404).json("Expense not found")
+}
+
+        return res.status(200).json(result.rows)
+
+    } catch (error) {
+                 console.error(error);
+    res.status(500).json({ error: "getExpenseByDate Error" });
+    }
+}
+
+const getDashboard = async (req,res)=>{
+    try {
+         const userId = req.user.id
+
+        if (!userId) {
+            return res.status(400).json("UserId didn't found")
+        }
+
+        const result = await pool.query(
+    "SELECT SUM(amount) AS total_spending FROM expenses WHERE user_id=$1",
+    [userId]
+)
+
+    } catch (error) {
+        
+    }
+}
+
+export { addExpense , getExpense , deleteExpense , getExpenseByDate ,getDashboard };
