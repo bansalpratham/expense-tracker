@@ -105,4 +105,34 @@ return res.status(200).json(result.rows[0])
     }
 }
 
-export {addCategory , getCategory ,deleteCategory};
+const getCategorySpending = async(req,res)=>{
+    try {
+             const userId = req.user.id
+
+        if (!userId) {
+            return res.status(400).json("UserId didn't found")
+        }
+
+        const result = await pool.query(
+            `SELECT
+                c.id,
+                c.name,
+                COALESCE(SUM(e.amount), 0) AS total_spending
+             FROM categories c
+             LEFT JOIN expenses e
+                ON c.id = e.category_id
+                AND e.user_id = $1
+             WHERE c.user_id = $1
+             GROUP BY c.id, c.name
+             ORDER BY total_spending DESC`,
+            [userId]
+        )
+
+        return res.status(200).json(result.rows)
+    } catch (error) {
+                console.error(error);
+    res.status(500).json({ error: "getCategorySpending Error" });
+    }
+}
+
+export {addCategory , getCategory ,deleteCategory , getCategorySpending};
