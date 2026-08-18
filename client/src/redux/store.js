@@ -3,7 +3,7 @@ import { configureStore } from "@reduxjs/toolkit"
 import categoryReducer from "./slices/categorySlice"
 import expenseReducer from "./slices/expenseSlice"
 import budgetReducer from "./slices/budgetSlice"
-
+import dashboardReducer from "./slices/dashboardSlice"
 
 export const store = configureStore({
 
@@ -13,7 +13,9 @@ export const store = configureStore({
 
     expense: expenseReducer,
 
-    budget: budgetReducer
+    budget: budgetReducer,
+
+    dashboard: dashboardReducer,
 
   }
 

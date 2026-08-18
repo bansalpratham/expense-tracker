@@ -1,6 +1,6 @@
 import express, { Router } from 'express'
 import authMiddleware from '../middleware/authMiddleware.js'
-import { addExpense, deleteExpense, getExpense, getExpenseByDate } from '../controllers/expenseController.js'
+import { addExpense, deleteExpense, getDashboard, getExpense, getExpenseByDate } from '../controllers/expenseController.js'
 
 const router3 = Router()
 
