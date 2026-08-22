@@ -34,7 +34,15 @@ import {
     YAxis
 } from "recharts"
 
-import { useDispatch, useSelector } from "react-redux"
+import {
+    useDispatch,
+    useSelector
+} from "react-redux"
+
+import {
+    useLocation,
+    useNavigate
+} from "react-router-dom"
 
 import AddExpenseForm from "../components/AddExpenseForm"
 
@@ -57,6 +65,12 @@ import {
     getBudget
 } from "../redux/slices/budgetSlice"
 
+
+/*
+========================================
+METRIC CARD
+========================================
+*/
 
 function MetricCard({
     label,
@@ -89,6 +103,7 @@ function MetricCard({
                 </strong>
 
                 {change && (
+
                     <span
                         className={
                             positive
@@ -106,6 +121,7 @@ function MetricCard({
                         {change}
 
                     </span>
+
                 )}
 
             </div>
@@ -115,14 +131,25 @@ function MetricCard({
 }
 
 
+/*
+========================================
+HOME
+========================================
+*/
+
 function Home() {
 
     const dispatch = useDispatch()
 
+    const navigate = useNavigate()
+
+    const location = useLocation()
+
+
     /*
-        ============================
-        REDUX STATE
-        ============================
+    ========================================
+    REDUX STATE
+    ========================================
     */
 
     const dashboard = useSelector(
@@ -143,14 +170,12 @@ function Home() {
 
 
     /*
-        ============================
-        LOCAL UI STATE
-        ============================
+    ========================================
+    LOCAL UI STATE
+    ========================================
     */
 
     const [menuOpen, setMenuOpen] = useState(false)
-
-    const [active, setActive] = useState("Dashboard")
 
     const [notice, setNotice] = useState("")
 
@@ -160,9 +185,9 @@ function Home() {
 
 
     /*
-        ============================
-        LOAD DATA
-        ============================
+    ========================================
+    LOAD DATA
+    ========================================
     */
 
     useEffect(() => {
@@ -181,9 +206,9 @@ function Home() {
 
 
     /*
-        ============================
-        TOAST
-        ============================
+    ========================================
+    TOAST
+    ========================================
     */
 
     const showNotice = (message) => {
@@ -191,16 +216,33 @@ function Home() {
         setNotice(message)
 
         window.setTimeout(() => {
+
             setNotice("")
+
         }, 2400)
 
     }
 
 
     /*
-        ============================
-        ADD EXPENSE
-        ============================
+    ========================================
+    NAVIGATION
+    ========================================
+    */
+
+    const navigateTo = (path) => {
+
+        navigate(path)
+
+        setMenuOpen(false)
+
+    }
+
+
+    /*
+    ========================================
+    ADD EXPENSE
+    ========================================
     */
 
     const handleAddExpense = async (values) => {
@@ -213,20 +255,36 @@ function Home() {
                 addExpense(values)
             ).unwrap()
 
+
             /*
-                Refresh dashboard because
-                spending values changed.
+            Refresh dashboard
             */
 
             await dispatch(
                 getDashboard()
             ).unwrap()
 
+
+            /*
+            Refresh category spending
+            */
+
             await dispatch(
                 getCategorySpending()
             ).unwrap()
 
+
+            /*
+            Refresh expenses
+            */
+
+            await dispatch(
+                getExpenses()
+            ).unwrap()
+
+
             setFormOpen(false)
+
 
             showNotice(
                 "Expense added successfully"
@@ -247,13 +305,14 @@ function Home() {
             setLoading(false)
 
         }
+
     }
 
 
     /*
-        ============================
-        DELETE EXPENSE
-        ============================
+    ========================================
+    DELETE EXPENSE
+    ========================================
     */
 
     const handleDeleteExpense = async (expenseId) => {
@@ -264,13 +323,24 @@ function Home() {
                 deleteExpense(expenseId)
             ).unwrap()
 
+
+            /*
+            Refresh dashboard
+            */
+
             await dispatch(
                 getDashboard()
             ).unwrap()
 
+
+            /*
+            Refresh category spending
+            */
+
             await dispatch(
                 getCategorySpending()
             ).unwrap()
+
 
             showNotice(
                 "Expense deleted successfully"
@@ -292,9 +362,9 @@ function Home() {
 
 
     /*
-        ============================
-        CATEGORY CHART
-        ============================
+    ========================================
+    CATEGORY CHART
+    ========================================
     */
 
     const colors = [
@@ -306,13 +376,23 @@ function Home() {
         "#fb7185"
     ]
 
+
     const categoryData = useMemo(() => {
 
         return categorySpending.map(
             (item, index) => ({
+
                 name: item.name,
-                value: Number(item.total_spending),
-                color: colors[index % colors.length]
+
+                value: Number(
+                    item.total_spending
+                ),
+
+                color:
+                    colors[
+                        index % colors.length
+                    ]
+
             })
         )
 
@@ -320,9 +400,9 @@ function Home() {
 
 
     /*
-        ============================
-        TOTAL SHOWN
-        ============================
+    ========================================
+    TOTAL SHOWN
+    ========================================
     */
 
     const totalVisible = useMemo(() => {
@@ -337,42 +417,54 @@ function Home() {
 
 
     /*
-        ============================
-        NAVIGATION
-        ============================
+    ========================================
+    SIDEBAR NAVIGATION
+    ========================================
     */
 
     const nav = [
+
         {
             label: "Dashboard",
-            icon: LayoutDashboard
+            icon: LayoutDashboard,
+            path: "/home"
         },
+
         {
             label: "Expenses",
-            icon: FileText
+            icon: FileText,
+            path: "/expenses"
         },
+
         {
             label: "Categories",
-            icon: Tags
+            icon: Tags,
+            path: "/categories"
         },
+
         {
             label: "Budgets",
-            icon: Wallet
+            icon: Wallet,
+            path: "/budget"
         }
+
     ]
 
 
     /*
-        ============================
-        RENDER
-        ============================
+    ========================================
+    RENDER
+    ========================================
     */
 
     return (
 
         <div className="dashboard-shell">
 
-            {/* SIDEBAR */}
+
+            {/* ========================================
+                SIDEBAR
+            ======================================== */}
 
             <aside
                 className={`sidebar ${
@@ -382,31 +474,57 @@ function Home() {
                 }`}
             >
 
-                <div className="brand">
+
+                {/* BRAND */}
+
+                <div
+                    className="brand"
+                    onClick={() =>
+                        navigateTo("/home")
+                    }
+                    style={{
+                        cursor: "pointer"
+                    }}
+                >
 
                     <span className="brand-mark">
+
                         <CircleDollarSign />
+
                     </span>
 
+
                     <span>
+
                         Expense
+
                         <span className="brand-accent">
                             Flow
                         </span>
+
                     </span>
+
 
                     <button
                         className="close-menu"
                         aria-label="Close menu"
-                        onClick={() =>
+                        onClick={(event) => {
+
+                            event.stopPropagation()
+
                             setMenuOpen(false)
-                        }
+
+                        }}
                     >
+
                         <X />
+
                     </button>
 
                 </div>
 
+
+                {/* NAVIGATION */}
 
                 <nav
                     className="nav-list"
@@ -414,32 +532,35 @@ function Home() {
                 >
 
                     {nav.map(
-                        ({ label, icon: Icon }) => (
+                        ({
+                            label,
+                            icon: Icon,
+                            path
+                        }) => (
 
                             <button
                                 key={label}
                                 className={`nav-item ${
-                                    active === label
+                                    location.pathname === path
                                         ? "active"
                                         : ""
                                 }`}
-                                onClick={() => {
-
-                                    setActive(label)
-
-                                    setMenuOpen(false)
-
-                                }}
+                                onClick={() =>
+                                    navigateTo(path)
+                                }
                             >
 
                                 <Icon />
 
                                 {label}
 
+
                                 {label === "Expenses" && (
 
                                     <span className="nav-count">
+
                                         {expenses.length}
+
                                     </span>
 
                                 )}
@@ -452,26 +573,37 @@ function Home() {
                 </nav>
 
 
+                {/* SIDEBAR BOTTOM */}
+
                 <div className="sidebar-bottom">
+
+
+                    {/* SETTINGS */}
 
                     <button
                         className="nav-item"
                         onClick={() =>
                             showNotice(
-                                "Settings are coming soon"
+                                "Settings feature coming soon"
                             )
                         }
                     >
+
                         <Settings />
+
                         Settings
+
                     </button>
 
+
+                    {/* PROFILE */}
 
                     <div className="profile">
 
                         <div className="avatar">
                             JD
                         </div>
+
 
                         <div className="min-w-0">
 
@@ -485,7 +617,10 @@ function Home() {
 
                         </div>
 
-                        <ChevronDown className="profile-chevron" />
+
+                        <ChevronDown
+                            className="profile-chevron"
+                        />
 
                     </div>
 
@@ -493,6 +628,8 @@ function Home() {
 
             </aside>
 
+
+            {/* MOBILE SCRIM */}
 
             {menuOpen && (
 
@@ -507,14 +644,21 @@ function Home() {
             )}
 
 
-            {/* MAIN */}
+            {/* ========================================
+                MAIN CONTENT
+            ======================================== */}
 
             <main className="main-content">
 
 
-                {/* TOP BAR */}
+                {/* ========================================
+                    TOP BAR
+                ======================================== */}
 
                 <header className="topbar">
+
+
+                    {/* MOBILE MENU */}
 
                     <button
                         className="mobile-menu"
@@ -523,9 +667,13 @@ function Home() {
                             setMenuOpen(true)
                         }
                     >
+
                         <Menu />
+
                     </button>
 
+
+                    {/* PAGE TITLE */}
 
                     <div>
 
@@ -534,29 +682,35 @@ function Home() {
                         </p>
 
                         <h1>
-                            {active === "Dashboard"
-                                ? "Good morning"
-                                : active
-                            }
+                            Good morning
                         </h1>
 
                     </div>
 
 
+                    {/* TOP ACTIONS */}
+
                     <div className="topbar-actions">
+
+
+                        {/* SEARCH */}
 
                         <button
                             className="icon-button"
                             aria-label="Search"
                             onClick={() =>
                                 showNotice(
-                                    "Search is coming soon"
+                                    "Search feature coming soon"
                                 )
                             }
                         >
+
                             <Search />
+
                         </button>
 
+
+                        {/* NOTIFICATIONS */}
 
                         <button
                             className="icon-button notification"
@@ -575,8 +729,19 @@ function Home() {
                         </button>
 
 
-                        <button className="top-avatar">
+                        {/* PROFILE */}
+
+                        <button
+                            className="top-avatar"
+                            onClick={() =>
+                                showNotice(
+                                    "Profile settings coming soon"
+                                )
+                            }
+                        >
+
                             JD
+
                         </button>
 
                     </div>
@@ -584,10 +749,16 @@ function Home() {
                 </header>
 
 
+                {/* ========================================
+                    CONTENT
+                ======================================== */}
+
                 <div className="content-wrap">
 
 
-                    {/* ADD EXPENSE FORM */}
+                    {/* ========================================
+                        ADD EXPENSE FORM
+                    ======================================== */}
 
                     {formOpen && (
 
@@ -604,6 +775,10 @@ function Home() {
 
                     )}
 
+
+                    {/* ========================================
+                        WELCOME
+                    ======================================== */}
 
                     {!formOpen && (
 
@@ -641,9 +816,14 @@ function Home() {
                     )}
 
 
-                    {/* METRICS */}
+                    {/* ========================================
+                        METRICS
+                    ======================================== */}
 
                     <section className="metrics-grid">
+
+
+                        {/* TOTAL SPENDING */}
 
                         <MetricCard
                             label="Total spending"
@@ -654,6 +834,8 @@ function Home() {
                         />
 
 
+                        {/* MONTHLY */}
+
                         <MetricCard
                             label="This month"
                             value={`₹${Number(
@@ -663,6 +845,8 @@ function Home() {
                         />
 
 
+                        {/* WEEKLY */}
+
                         <MetricCard
                             label="This week"
                             value={`₹${Number(
@@ -671,6 +855,8 @@ function Home() {
                             icon={CalendarDays}
                         />
 
+
+                        {/* BUDGET */}
 
                         <MetricCard
                             label="Budget left"
@@ -688,7 +874,9 @@ function Home() {
                     </section>
 
 
-                    {/* QUICK ACTIONS */}
+                    {/* ========================================
+                        QUICK ACTIONS
+                    ======================================== */}
 
                     <section className="quick-row">
 
@@ -707,37 +895,53 @@ function Home() {
 
                         <div className="quick-actions">
 
+
+                            {/* ADD EXPENSE */}
+
                             <button
                                 onClick={() =>
                                     setFormOpen(true)
                                 }
                             >
+
                                 <Plus />
+
                                 Add expense
+
                             </button>
 
 
+                            {/* MANAGE CATEGORIES */}
+
                             <button
                                 onClick={() =>
-                                    showNotice(
-                                        "Category manager coming next"
+                                    navigateTo(
+                                        "/categories"
                                     )
                                 }
                             >
+
                                 <Tags />
+
                                 Manage categories
+
                             </button>
 
 
+                            {/* SET BUDGET */}
+
                             <button
                                 onClick={() =>
-                                    showNotice(
-                                        "Budget manager coming next"
+                                    navigateTo(
+                                        "/budget"
                                     )
                                 }
                             >
+
                                 <Wallet />
+
                                 Set a budget
+
                             </button>
 
                         </div>
@@ -745,12 +949,16 @@ function Home() {
                     </section>
 
 
-                    {/* CHARTS */}
+                    {/* ========================================
+                        CHARTS
+                    ======================================== */}
 
                     <section className="charts-grid">
 
 
-                        {/* SPENDING */}
+                        {/* ========================================
+                            SPENDING OVERVIEW
+                        ======================================== */}
 
                         <div className="panel trend-panel">
 
@@ -787,12 +995,15 @@ function Home() {
                                                 (
                                                     expense
                                                 ) => ({
+
                                                     day:
                                                         expense.date,
+
                                                     spent:
                                                         Number(
                                                             expense.amount
                                                         )
+
                                                 })
                                             )}
                                     >
@@ -834,6 +1045,7 @@ function Home() {
                                             }}
                                         />
 
+
                                         <YAxis hide />
 
 
@@ -871,7 +1083,9 @@ function Home() {
                         </div>
 
 
-                        {/* CATEGORY */}
+                        {/* ========================================
+                            CATEGORY CHART
+                        ======================================== */}
 
                         <div className="panel category-panel">
 
@@ -889,15 +1103,18 @@ function Home() {
 
                                 </div>
 
+
                                 <button
                                     className="more-button"
                                     onClick={() =>
-                                        showNotice(
-                                            "Category options coming soon"
+                                        navigateTo(
+                                            "/categories"
                                         )
                                     }
                                 >
+
                                     <MoreHorizontal />
+
                                 </button>
 
                             </div>
@@ -919,7 +1136,9 @@ function Home() {
                                                 <PieChart>
 
                                                     <Pie
-                                                        data={categoryData}
+                                                        data={
+                                                            categoryData
+                                                        }
                                                         innerRadius={57}
                                                         outerRadius={78}
                                                         paddingAngle={3}
@@ -954,10 +1173,12 @@ function Home() {
                                             <div className="donut-label">
 
                                                 <strong>
+
                                                     ₹
                                                     {totalVisible.toFixed(
                                                         0
                                                     )}
+
                                                 </strong>
 
                                                 <span>
@@ -990,13 +1211,17 @@ function Home() {
                                                             }}
                                                         />
 
+
                                                         {item.name}
 
+
                                                         <strong>
+
                                                             ₹
                                                             {item.value.toFixed(
                                                                 2
                                                             )}
+
                                                         </strong>
 
                                                     </div>
@@ -1023,9 +1248,12 @@ function Home() {
                     </section>
 
 
-                    {/* EXPENSE TABLE */}
+                    {/* ========================================
+                        RECENT EXPENSES
+                    ======================================== */}
 
                     <section className="panel expenses-panel">
+
 
                         <div className="panel-heading">
 
@@ -1036,10 +1264,31 @@ function Home() {
                                 </p>
 
                                 <p className="muted-copy">
-                                    {expenses.length} transactions
+                                    {expenses.length}
+                                    {" "}
+                                    transactions
                                 </p>
 
                             </div>
+
+
+                            {expenses.length > 0 && (
+
+                                <button
+                                    className="more-button"
+                                    onClick={() =>
+                                        navigateTo(
+                                            "/expenses"
+                                        )
+                                    }
+                                    title="View all expenses"
+                                >
+
+                                    <MoreHorizontal />
+
+                                </button>
+
+                            )}
 
                         </div>
 
@@ -1090,9 +1339,11 @@ function Home() {
                                                         "30px"
                                                 }}
                                             >
+
                                                 <p className="muted-copy">
                                                     No expenses yet.
                                                 </p>
+
                                             </td>
 
                                         </tr>
@@ -1117,6 +1368,7 @@ function Home() {
                                                             )
                                                     )
 
+
                                                 return (
 
                                                     <tr
@@ -1124,6 +1376,9 @@ function Home() {
                                                             expense.id
                                                         }
                                                     >
+
+
+                                                        {/* DESCRIPTION */}
 
                                                         <td>
 
@@ -1134,6 +1389,7 @@ function Home() {
                                                                     ₹
 
                                                                 </span>
+
 
                                                                 <span>
 
@@ -1148,6 +1404,8 @@ function Home() {
                                                         </td>
 
 
+                                                        {/* CATEGORY */}
+
                                                         <td>
 
                                                             <span className="category-pill">
@@ -1161,6 +1419,8 @@ function Home() {
                                                         </td>
 
 
+                                                        {/* DATE */}
+
                                                         <td className="date-cell">
 
                                                             {
@@ -1169,6 +1429,8 @@ function Home() {
 
                                                         </td>
 
+
+                                                        {/* AMOUNT */}
 
                                                         <td className="amount-cell">
 
@@ -1181,6 +1443,8 @@ function Home() {
 
                                                         </td>
 
+
+                                                        {/* DELETE */}
 
                                                         <td>
 
@@ -1216,15 +1480,24 @@ function Home() {
                         </div>
 
 
+                        {/* TABLE FOOTER */}
+
                         <div className="table-footer">
 
                             <span>
+
                                 Total shown: ₹
                                 {totalVisible.toFixed(2)}
+
                             </span>
 
+
                             <span>
-                                {expenses.length} expenses
+
+                                {expenses.length}
+                                {" "}
+                                expenses
+
                             </span>
 
                         </div>
@@ -1236,7 +1509,9 @@ function Home() {
             </main>
 
 
-            {/* TOAST */}
+            {/* ========================================
+                TOAST
+            ======================================== */}
 
             {notice && (
 
@@ -1244,7 +1519,9 @@ function Home() {
                     className="toast-notice"
                     role="status"
                 >
+
                     {notice}
+
                 </div>
 
             )}
