@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react"
-import { useDispatch, useSelector } from "react-redux"
 
 import {
     ArrowDownRight,
@@ -35,12 +34,17 @@ import {
     YAxis
 } from "recharts"
 
+import { useDispatch, useSelector } from "react-redux"
+
+import AddExpenseForm from "../components/AddExpenseForm"
+
 import {
     getDashboard
 } from "../redux/slices/dashboardSlice"
 
 import {
     getExpenses,
+    addExpense,
     deleteExpense
 } from "../redux/slices/expenseSlice"
 
@@ -54,9 +58,95 @@ import {
 } from "../redux/slices/budgetSlice"
 
 
+function MetricCard({
+    label,
+    value,
+    change,
+    positive,
+    icon: Icon
+}) {
+
+    return (
+
+        <div className="metric-card">
+
+            <div className="flex items-start justify-between">
+
+                <span className="metric-label">
+                    {label}
+                </span>
+
+                <span className="metric-icon">
+                    <Icon />
+                </span>
+
+            </div>
+
+            <div className="mt-5 flex items-end justify-between gap-3">
+
+                <strong className="metric-value">
+                    {value}
+                </strong>
+
+                {change && (
+                    <span
+                        className={
+                            positive
+                                ? "change positive"
+                                : "change negative"
+                        }
+                    >
+
+                        {positive ? (
+                            <ArrowUpRight />
+                        ) : (
+                            <ArrowDownRight />
+                        )}
+
+                        {change}
+
+                    </span>
+                )}
+
+            </div>
+
+        </div>
+    )
+}
+
+
 function Home() {
 
     const dispatch = useDispatch()
+
+    /*
+        ============================
+        REDUX STATE
+        ============================
+    */
+
+    const dashboard = useSelector(
+        (state) => state.dashboard
+    )
+
+    const expenses = useSelector(
+        (state) => state.expense.expenses
+    )
+
+    const categories = useSelector(
+        (state) => state.category.categories
+    )
+
+    const categorySpending = useSelector(
+        (state) => state.category.categorySpending
+    )
+
+
+    /*
+        ============================
+        LOCAL UI STATE
+        ============================
+    */
 
     const [menuOpen, setMenuOpen] = useState(false)
 
@@ -64,27 +154,16 @@ function Home() {
 
     const [notice, setNotice] = useState("")
 
+    const [formOpen, setFormOpen] = useState(false)
 
-    // -----------------------------
-    // REDUX DATA
-    // -----------------------------
-
-    const dashboard = useSelector(
-        state => state.dashboard
-    )
-
-    const expenses = useSelector(
-        state => state.expense.expenses
-    )
-
-    const categorySpending = useSelector(
-        state => state.category.categorySpending
-    )
+    const [loading, setLoading] = useState(false)
 
 
-    // -----------------------------
-    // LOAD DATA
-    // -----------------------------
+    /*
+        ============================
+        LOAD DATA
+        ============================
+    */
 
     useEffect(() => {
 
@@ -101,122 +180,199 @@ function Home() {
     }, [dispatch])
 
 
-    // -----------------------------
-    // NOTICE
-    // -----------------------------
+    /*
+        ============================
+        TOAST
+        ============================
+    */
 
     const showNotice = (message) => {
 
         setNotice(message)
 
-        setTimeout(() => {
+        window.setTimeout(() => {
             setNotice("")
         }, 2400)
 
     }
 
 
-    // -----------------------------
-    // TOTAL VISIBLE EXPENSES
-    // -----------------------------
+    /*
+        ============================
+        ADD EXPENSE
+        ============================
+    */
+
+    const handleAddExpense = async (values) => {
+
+        try {
+
+            setLoading(true)
+
+            await dispatch(
+                addExpense(values)
+            ).unwrap()
+
+            /*
+                Refresh dashboard because
+                spending values changed.
+            */
+
+            await dispatch(
+                getDashboard()
+            ).unwrap()
+
+            await dispatch(
+                getCategorySpending()
+            ).unwrap()
+
+            setFormOpen(false)
+
+            showNotice(
+                "Expense added successfully"
+            )
+
+        } catch (error) {
+
+            console.error(error)
+
+            showNotice(
+                typeof error === "string"
+                    ? error
+                    : "Failed to add expense"
+            )
+
+        } finally {
+
+            setLoading(false)
+
+        }
+    }
+
+
+    /*
+        ============================
+        DELETE EXPENSE
+        ============================
+    */
+
+    const handleDeleteExpense = async (expenseId) => {
+
+        try {
+
+            await dispatch(
+                deleteExpense(expenseId)
+            ).unwrap()
+
+            await dispatch(
+                getDashboard()
+            ).unwrap()
+
+            await dispatch(
+                getCategorySpending()
+            ).unwrap()
+
+            showNotice(
+                "Expense deleted successfully"
+            )
+
+        } catch (error) {
+
+            console.error(error)
+
+            showNotice(
+                typeof error === "string"
+                    ? error
+                    : "Failed to delete expense"
+            )
+
+        }
+
+    }
+
+
+    /*
+        ============================
+        CATEGORY CHART
+        ============================
+    */
+
+    const colors = [
+        "#34d399",
+        "#60a5fa",
+        "#fbbf24",
+        "#f472b6",
+        "#a78bfa",
+        "#fb7185"
+    ]
+
+    const categoryData = useMemo(() => {
+
+        return categorySpending.map(
+            (item, index) => ({
+                name: item.name,
+                value: Number(item.total_spending),
+                color: colors[index % colors.length]
+            })
+        )
+
+    }, [categorySpending])
+
+
+    /*
+        ============================
+        TOTAL SHOWN
+        ============================
+    */
 
     const totalVisible = useMemo(() => {
 
         return expenses.reduce(
             (sum, expense) =>
-                sum + Number(expense.amount || 0),
+                sum + Number(expense.amount),
             0
         )
 
     }, [expenses])
 
 
-    // -----------------------------
-    // CATEGORY CHART DATA
-    // -----------------------------
-
-    const categoryData = categorySpending.map(
-        (category, index) => {
-
-            const colors = [
-                "#34d399",
-                "#60a5fa",
-                "#fbbf24",
-                "#f87171",
-                "#a78bfa",
-                "#22d3ee"
-            ]
-
-            return {
-                name: category.name,
-                value: Number(category.total_spending),
-                color: colors[index % colors.length]
-            }
-
-        }
-    )
-
-
-    // -----------------------------
-    // LAST 7 EXPENSES
-    // -----------------------------
-
-    const recentExpenses = [...expenses]
-        .sort(
-            (a, b) =>
-                new Date(b.date) - new Date(a.date)
-        )
-        .slice(0, 5)
-
-
-    // -----------------------------
-    // DELETE EXPENSE
-    // -----------------------------
-
-    const handleDeleteExpense = (expenseId) => {
-
-        dispatch(deleteExpense(expenseId))
-
-        showNotice("Expense deleted")
-
-    }
-
-
-    // -----------------------------
-    // NAVIGATION
-    // -----------------------------
+    /*
+        ============================
+        NAVIGATION
+        ============================
+    */
 
     const nav = [
-
         {
             label: "Dashboard",
             icon: LayoutDashboard
         },
-
         {
             label: "Expenses",
             icon: FileText
         },
-
         {
             label: "Categories",
             icon: Tags
         },
-
         {
             label: "Budgets",
             icon: Wallet
         }
-
     ]
 
+
+    /*
+        ============================
+        RENDER
+        ============================
+    */
 
     return (
 
         <div className="dashboard-shell">
 
-
-            {/* ================= SIDEBAR ================= */}
+            {/* SIDEBAR */}
 
             <aside
                 className={`sidebar ${
@@ -241,6 +397,7 @@ function Home() {
 
                     <button
                         className="close-menu"
+                        aria-label="Close menu"
                         onClick={() =>
                             setMenuOpen(false)
                         }
@@ -251,7 +408,10 @@ function Home() {
                 </div>
 
 
-                <nav className="nav-list">
+                <nav
+                    className="nav-list"
+                    aria-label="Primary navigation"
+                >
 
                     {nav.map(
                         ({ label, icon: Icon }) => (
@@ -302,11 +462,8 @@ function Home() {
                             )
                         }
                     >
-
                         <Settings />
-
                         Settings
-
                     </button>
 
 
@@ -341,6 +498,7 @@ function Home() {
 
                 <button
                     className="mobile-scrim"
+                    aria-label="Close navigation"
                     onClick={() =>
                         setMenuOpen(false)
                     }
@@ -349,17 +507,18 @@ function Home() {
             )}
 
 
-            {/* ================= MAIN ================= */}
+            {/* MAIN */}
 
             <main className="main-content">
 
 
-                {/* ================= TOP BAR ================= */}
+                {/* TOP BAR */}
 
                 <header className="topbar">
 
                     <button
                         className="mobile-menu"
+                        aria-label="Open menu"
                         onClick={() =>
                             setMenuOpen(true)
                         }
@@ -371,13 +530,14 @@ function Home() {
                     <div>
 
                         <p className="eyebrow">
-                            Your ExpenseFlow dashboard
+                            ExpenseFlow
                         </p>
 
                         <h1>
                             {active === "Dashboard"
-                                ? "Good to see you"
-                                : active}
+                                ? "Good morning"
+                                : active
+                            }
                         </h1>
 
                     </div>
@@ -387,9 +547,10 @@ function Home() {
 
                         <button
                             className="icon-button"
+                            aria-label="Search"
                             onClick={() =>
                                 showNotice(
-                                    "Search coming soon"
+                                    "Search is coming soon"
                                 )
                             }
                         >
@@ -399,6 +560,7 @@ function Home() {
 
                         <button
                             className="icon-button notification"
+                            aria-label="Notifications"
                             onClick={() =>
                                 showNotice(
                                     "You are all caught up"
@@ -414,7 +576,7 @@ function Home() {
 
 
                         <button className="top-avatar">
-                            EF
+                            JD
                         </button>
 
                     </div>
@@ -422,51 +584,66 @@ function Home() {
                 </header>
 
 
-                {/* ================= CONTENT ================= */}
-
                 <div className="content-wrap">
 
 
-                    {/* ================= WELCOME ================= */}
+                    {/* ADD EXPENSE FORM */}
 
-                    <section className="welcome-row">
+                    {formOpen && (
 
-                        <div>
-
-                            <p className="section-kicker">
-                                Your financial overview
-                            </p>
-
-                            <p className="muted-copy">
-                                Here's what's happening
-                                with your money.
-                            </p>
-
-                        </div>
-
-
-                        <button
-                            className="primary-button"
-                            onClick={() =>
-                                showNotice(
-                                    "Add expense form coming next"
-                                )
+                        <AddExpenseForm
+                            categories={categories}
+                            loading={loading}
+                            onCancel={() =>
+                                setFormOpen(false)
                             }
-                        >
+                            onSubmit={
+                                handleAddExpense
+                            }
+                        />
 
-                            <Plus />
-
-                            Add expense
-
-                        </button>
-
-                    </section>
+                    )}
 
 
-                    {/* ================= METRICS ================= */}
+                    {!formOpen && (
+
+                        <section className="welcome-row">
+
+                            <div>
+
+                                <p className="section-kicker">
+                                    Your financial overview
+                                </p>
+
+                                <p className="muted-copy">
+                                    Here&apos;s what&apos;s
+                                    happening with your money.
+                                </p>
+
+                            </div>
+
+
+                            <button
+                                className="primary-button"
+                                onClick={() =>
+                                    setFormOpen(true)
+                                }
+                            >
+
+                                <Plus />
+
+                                Add expense
+
+                            </button>
+
+                        </section>
+
+                    )}
+
+
+                    {/* METRICS */}
 
                     <section className="metrics-grid">
-
 
                         <MetricCard
                             label="Total spending"
@@ -474,47 +651,44 @@ function Home() {
                                 dashboard.totalSpending || 0
                             ).toFixed(2)}`}
                             icon={Wallet}
-                            positive
-                            change="overall"
                         />
 
 
                         <MetricCard
-                            label="Monthly spending"
+                            label="This month"
                             value={`₹${Number(
                                 dashboard.monthly?.spending || 0
                             ).toFixed(2)}`}
                             icon={TrendingUp}
-                            positive
-                            change="this month"
                         />
 
 
                         <MetricCard
-                            label="Weekly spending"
+                            label="This week"
                             value={`₹${Number(
                                 dashboard.weekly?.spending || 0
                             ).toFixed(2)}`}
                             icon={CalendarDays}
-                            positive
-                            change="this week"
                         />
 
 
                         <MetricCard
-                            label="Monthly remaining"
+                            label="Budget left"
                             value={`₹${Number(
                                 dashboard.monthly?.remaining || 0
                             ).toFixed(2)}`}
+                            positive={
+                                Number(
+                                    dashboard.monthly?.remaining || 0
+                                ) >= 0
+                            }
                             icon={CreditCard}
-                            positive
-                            change="remaining"
                         />
 
                     </section>
 
 
-                    {/* ================= QUICK ACTIONS ================= */}
+                    {/* QUICK ACTIONS */}
 
                     <section className="quick-row">
 
@@ -535,9 +709,7 @@ function Home() {
 
                             <button
                                 onClick={() =>
-                                    showNotice(
-                                        "Add expense form coming next"
-                                    )
+                                    setFormOpen(true)
                                 }
                             >
                                 <Plus />
@@ -573,12 +745,12 @@ function Home() {
                     </section>
 
 
-                    {/* ================= CHARTS ================= */}
+                    {/* CHARTS */}
 
                     <section className="charts-grid">
 
 
-                        {/* SPENDING CHART */}
+                        {/* SPENDING */}
 
                         <div className="panel trend-panel">
 
@@ -591,23 +763,10 @@ function Home() {
                                     </p>
 
                                     <p className="muted-copy">
-                                        Your recent spending
+                                        Your current spending
                                     </p>
 
                                 </div>
-
-
-                                <button
-                                    className="select-button"
-                                    onClick={() =>
-                                        showNotice(
-                                            "Date filtering coming next"
-                                        )
-                                    }
-                                >
-                                    Recent
-                                    <ChevronDown />
-                                </button>
 
                             </div>
 
@@ -620,25 +779,22 @@ function Home() {
                                 >
 
                                     <AreaChart
-                                        data={recentExpenses.map(
-                                            expense => ({
-                                                day:
-                                                    new Date(
-                                                        expense.date
-                                                    ).toLocaleDateString(
-                                                        "en-US",
-                                                        {
-                                                            weekday:
-                                                                "short"
-                                                        }
-                                                    ),
-
-                                                spent:
-                                                    Number(
-                                                        expense.amount
-                                                    )
-                                            })
-                                        )}
+                                        data={expenses
+                                            .slice()
+                                            .reverse()
+                                            .slice(0, 7)
+                                            .map(
+                                                (
+                                                    expense
+                                                ) => ({
+                                                    day:
+                                                        expense.date,
+                                                    spent:
+                                                        Number(
+                                                            expense.amount
+                                                        )
+                                                })
+                                            )}
                                     >
 
                                         <defs>
@@ -674,10 +830,9 @@ function Home() {
                                             tickLine={false}
                                             tick={{
                                                 fill: "#718096",
-                                                fontSize: 12
+                                                fontSize: 10
                                             }}
                                         />
-
 
                                         <YAxis hide />
 
@@ -692,6 +847,10 @@ function Home() {
                                                 color:
                                                     "#e7f5ef"
                                             }}
+                                            formatter={(value) => [
+                                                `₹${value}`,
+                                                "Spent"
+                                            ]}
                                         />
 
 
@@ -712,7 +871,7 @@ function Home() {
                         </div>
 
 
-                        {/* CATEGORY CHART */}
+                        {/* CATEGORY */}
 
                         <div className="panel category-panel">
 
@@ -730,7 +889,6 @@ function Home() {
 
                                 </div>
 
-
                                 <button
                                     className="more-button"
                                     onClick={() =>
@@ -747,101 +905,116 @@ function Home() {
 
                             <div className="category-body">
 
+                                {categoryData.length > 0 ? (
 
-                                <div className="donut-wrap">
+                                    <>
 
-                                    <ResponsiveContainer
-                                        width="100%"
-                                        height="100%"
-                                    >
+                                        <div className="donut-wrap">
 
-                                        <PieChart>
-
-                                            <Pie
-                                                data={
-                                                    categoryData
-                                                }
-                                                innerRadius={57}
-                                                outerRadius={78}
-                                                paddingAngle={3}
-                                                dataKey="value"
-                                                stroke="none"
+                                            <ResponsiveContainer
+                                                width="100%"
+                                                height="100%"
                                             >
 
-                                                {categoryData.map(
-                                                    item => (
+                                                <PieChart>
 
-                                                        <Cell
-                                                            key={
-                                                                item.name
-                                                            }
-                                                            fill={
-                                                                item.color
-                                                            }
-                                                        />
+                                                    <Pie
+                                                        data={categoryData}
+                                                        innerRadius={57}
+                                                        outerRadius={78}
+                                                        paddingAngle={3}
+                                                        dataKey="value"
+                                                        stroke="none"
+                                                    >
 
-                                                    )
-                                                )}
+                                                        {categoryData.map(
+                                                            (
+                                                                entry
+                                                            ) => (
 
-                                            </Pie>
+                                                                <Cell
+                                                                    key={
+                                                                        entry.name
+                                                                    }
+                                                                    fill={
+                                                                        entry.color
+                                                                    }
+                                                                />
 
-                                        </PieChart>
+                                                            )
+                                                        )}
 
-                                    </ResponsiveContainer>
+                                                    </Pie>
 
+                                                </PieChart>
 
-                                    <div className="donut-label">
-
-                                        <strong>
-                                            ₹
-                                            {Number(
-                                                totalVisible
-                                            ).toFixed(0)}
-                                        </strong>
-
-                                        <span>
-                                            spending
-                                        </span>
-
-                                    </div>
-
-                                </div>
+                                            </ResponsiveContainer>
 
 
-                                <div className="legend">
-
-                                    {categoryData.map(
-                                        item => (
-
-                                            <div
-                                                className="legend-item"
-                                                key={
-                                                    item.name
-                                                }
-                                            >
-
-                                                <span
-                                                    style={{
-                                                        backgroundColor:
-                                                            item.color
-                                                    }}
-                                                />
-
-                                                {item.name}
+                                            <div className="donut-label">
 
                                                 <strong>
                                                     ₹
-                                                    {item.value.toFixed(
+                                                    {totalVisible.toFixed(
                                                         0
                                                     )}
                                                 </strong>
 
+                                                <span>
+                                                    total
+                                                </span>
+
                                             </div>
 
-                                        )
-                                    )}
+                                        </div>
 
-                                </div>
+
+                                        <div className="legend">
+
+                                            {categoryData.map(
+                                                (
+                                                    item
+                                                ) => (
+
+                                                    <div
+                                                        className="legend-item"
+                                                        key={
+                                                            item.name
+                                                        }
+                                                    >
+
+                                                        <span
+                                                            style={{
+                                                                backgroundColor:
+                                                                    item.color
+                                                            }}
+                                                        />
+
+                                                        {item.name}
+
+                                                        <strong>
+                                                            ₹
+                                                            {item.value.toFixed(
+                                                                2
+                                                            )}
+                                                        </strong>
+
+                                                    </div>
+
+                                                )
+                                            )}
+
+                                        </div>
+
+                                    </>
+
+                                ) : (
+
+                                    <p className="muted-copy">
+                                        No category spending yet.
+                                    </p>
+
+                                )}
 
                             </div>
 
@@ -850,7 +1023,7 @@ function Home() {
                     </section>
 
 
-                    {/* ================= EXPENSES ================= */}
+                    {/* EXPENSE TABLE */}
 
                     <section className="panel expenses-panel">
 
@@ -863,25 +1036,10 @@ function Home() {
                                 </p>
 
                                 <p className="muted-copy">
-                                    {expenses.length}
-                                    transactions
+                                    {expenses.length} transactions
                                 </p>
 
                             </div>
-
-
-                            <button
-                                className="text-button"
-                                onClick={() =>
-                                    setActive("Expenses")
-                                }
-                            >
-
-                                View all
-
-                                <ArrowUpRight />
-
-                            </button>
 
                         </div>
 
@@ -910,7 +1068,7 @@ function Home() {
                                             Amount
                                         </th>
 
-                                        <th />
+                                        <th aria-label="Actions" />
 
                                     </tr>
 
@@ -919,105 +1077,134 @@ function Home() {
 
                                 <tbody>
 
-                                    {recentExpenses.length === 0 ? (
+                                    {expenses.length === 0 ? (
 
                                         <tr>
 
                                             <td
                                                 colSpan="5"
-                                                className="empty-state"
+                                                style={{
+                                                    textAlign:
+                                                        "center",
+                                                    padding:
+                                                        "30px"
+                                                }}
                                             >
-                                                No expenses yet.
+                                                <p className="muted-copy">
+                                                    No expenses yet.
+                                                </p>
                                             </td>
 
                                         </tr>
 
                                     ) : (
 
-                                        recentExpenses.map(
-                                            expense => (
+                                        expenses.map(
+                                            (
+                                                expense
+                                            ) => {
 
-                                                <tr
-                                                    key={
-                                                        expense.id
-                                                    }
-                                                >
-
-                                                    <td>
-
-                                                        <div className="merchant">
-
-                                                            <span className="merchant-icon">
-                                                                <FileText />
-                                                            </span>
-
-                                                            <span>
-                                                                {
-                                                                    expense.description
-                                                                }
-                                                            </span>
-
-                                                        </div>
-
-                                                    </td>
-
-
-                                                    <td>
-
-                                                        <span className="category-pill">
-
-                                                            Category
-                                                            #
-                                                            {
+                                                const category =
+                                                    categories.find(
+                                                        (
+                                                            item
+                                                        ) =>
+                                                            Number(
+                                                                item.id
+                                                            ) ===
+                                                            Number(
                                                                 expense.category_id
+                                                            )
+                                                    )
+
+                                                return (
+
+                                                    <tr
+                                                        key={
+                                                            expense.id
+                                                        }
+                                                    >
+
+                                                        <td>
+
+                                                            <div className="merchant">
+
+                                                                <span className="merchant-icon bg-emerald-400/15 text-emerald-300">
+
+                                                                    ₹
+
+                                                                </span>
+
+                                                                <span>
+
+                                                                    {
+                                                                        expense.description
+                                                                    }
+
+                                                                </span>
+
+                                                            </div>
+
+                                                        </td>
+
+
+                                                        <td>
+
+                                                            <span className="category-pill">
+
+                                                                {category
+                                                                    ? category.name
+                                                                    : "Unknown"}
+
+                                                            </span>
+
+                                                        </td>
+
+
+                                                        <td className="date-cell">
+
+                                                            {
+                                                                expense.date
                                                             }
 
-                                                        </span>
-
-                                                    </td>
+                                                        </td>
 
 
-                                                    <td className="date-cell">
+                                                        <td className="amount-cell">
 
-                                                        {new Date(
-                                                            expense.date
-                                                        ).toLocaleDateString()}
+                                                            -₹
+                                                            {Number(
+                                                                expense.amount
+                                                            ).toFixed(
+                                                                2
+                                                            )}
 
-                                                    </td>
-
-
-                                                    <td className="amount-cell">
-
-                                                        ₹
-                                                        {Number(
-                                                            expense.amount
-                                                        ).toFixed(
-                                                            2
-                                                        )}
-
-                                                    </td>
+                                                        </td>
 
 
-                                                    <td>
+                                                        <td>
 
-                                                        <button
-                                                            className="delete-button"
-                                                            onClick={() =>
-                                                                handleDeleteExpense(
-                                                                    expense.id
-                                                                )
-                                                            }
-                                                        >
+                                                            <button
+                                                                className="delete-button"
+                                                                aria-label="Delete expense"
+                                                                onClick={() =>
+                                                                    handleDeleteExpense(
+                                                                        expense.id
+                                                                    )
+                                                                }
+                                                            >
 
-                                                            <Trash2 />
+                                                                <Trash2 />
 
-                                                        </button>
+                                                            </button>
 
-                                                    </td>
+                                                        </td>
 
-                                                </tr>
+                                                    </tr>
 
-                                            )
+                                                )
+
+                                            }
                                         )
 
                                     )}
@@ -1032,9 +1219,12 @@ function Home() {
                         <div className="table-footer">
 
                             <span>
-                                Showing{" "}
-                                {recentExpenses.length}{" "}
-                                recent expenses
+                                Total shown: ₹
+                                {totalVisible.toFixed(2)}
+                            </span>
+
+                            <span>
+                                {expenses.length} expenses
                             </span>
 
                         </div>
@@ -1046,82 +1236,20 @@ function Home() {
             </main>
 
 
-            {/* ================= TOAST ================= */}
+            {/* TOAST */}
 
             {notice && (
 
-                <div className="toast-notice">
-
+                <div
+                    className="toast-notice"
+                    role="status"
+                >
                     {notice}
-
                 </div>
 
             )}
 
         </div>
-
-    )
-}
-
-
-/* ========================================================= */
-/* METRIC CARD */
-/* ========================================================= */
-
-function MetricCard({
-    label,
-    value,
-    change,
-    positive,
-    icon: Icon
-}) {
-
-    return (
-
-        <div className="metric-card">
-
-            <div className="flex items-start justify-between">
-
-                <span className="metric-label">
-                    {label}
-                </span>
-
-                <span className="metric-icon">
-
-                    <Icon />
-
-                </span>
-
-            </div>
-
-
-            <div className="mt-5 flex items-end justify-between gap-3">
-
-                <strong className="metric-value">
-                    {value}
-                </strong>
-
-
-                <span
-                    className={
-                        positive
-                            ? "change positive"
-                            : "change negative"
-                    }
-                >
-
-                    {positive
-                        ? <ArrowUpRight />
-                        : <ArrowDownRight />}
-
-                    {change}
-
-                </span>
-
-            </div>
-
-        </div>
-
     )
 }
 
