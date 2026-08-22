@@ -100,11 +100,15 @@ const deleteExpense = async (req,res)=>{
         {
             return res.status(400).json("ExpenseId didn't found")
         }
+        
+const result = await pool.query(
+    `DELETE FROM expenses
+     WHERE id=$1 AND user_id=$2
+     RETURNING id, amount, description, date, user_id, category_id`,
+    [expenseId, userId]
+)
 
-        const result = await pool.query("DELETE FROM expenses WHERE id=$1 AND user_id=$2",[expenseId,userId])
-
-        if (result.rows.length === 0)
-{
+if (result.rows.length === 0) {
     return res.status(404).json("Expense not found")
 }
 
