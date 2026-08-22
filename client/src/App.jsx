@@ -4,6 +4,8 @@ import Login from "./pages/Login"
 import Signup from "./pages/Signup"
 import Home from "./pages/Home"
 import Expenses from "./pages/Expenses"
+import Categories from "./pages/Categories"
+import Budget from "./pages/Budget"
 
 function App() {
 
@@ -31,6 +33,16 @@ function App() {
      <Route
     path="/expenses"
     element={<Expenses />}
+/>
+
+<Route
+    path="/categories"
+    element={<Categories />}
+/>
+
+<Route
+    path="/budget"
+    element={<Budget />}
 />
 
       </Routes>

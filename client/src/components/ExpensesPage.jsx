@@ -5,8 +5,7 @@ import {
     Plus,
     Search,
     Trash2,
-    X,
-    WalletCards
+    X
 } from "lucide-react"
 
 import { useDispatch, useSelector } from "react-redux"
@@ -20,127 +19,125 @@ import {
 import { getCategories } from "../redux/slices/categorySlice"
 
 
+function DeleteExpenseDialog({ expense, onCancel, onConfirm }) {
+
+    return (
+        <div className="expense-dialog-backdrop">
+
+            <div
+                className="expense-dialog"
+                role="dialog"
+                aria-modal="true"
+            >
+
+                <button
+                    className="form-close-button"
+                    onClick={onCancel}
+                    aria-label="Close dialog"
+                >
+                    <X />
+                </button>
+
+                <span className="dialog-trash">
+                    <Trash2 />
+                </span>
+
+                <h2>
+                    Delete this expense?
+                </h2>
+
+                <p>
+                    This action cannot be undone.
+                    Remove{" "}
+                    <strong>
+                        {expense.description || "this expense"}
+                    </strong>
+                    ?
+                </p>
+
+                <div className="expense-form-actions">
+
+                    <button
+                        className="secondary-button"
+                        onClick={onCancel}
+                    >
+                        Cancel
+                    </button>
+
+                    <button
+                        className="danger-button"
+                        onClick={onConfirm}
+                    >
+                        Delete expense
+                    </button>
+
+                </div>
+
+            </div>
+
+        </div>
+    )
+}
+
+
 function ExpensesPage({ onAddExpense }) {
 
     const dispatch = useDispatch()
 
     const expenses = useSelector(
-        state => state.expense.expenses
+        (state) => state.expense.expenses
     )
 
     const categories = useSelector(
-        state => state.category.categories
+        (state) => state.category.categories
     )
 
-    const [search, setSearch] = useState("")
+    const [query, setQuery] = useState("")
 
     const [startDate, setStartDate] = useState("")
 
     const [endDate, setEndDate] = useState("")
 
-    const [deleteItem, setDeleteItem] = useState(null)
+    const [pendingDelete, setPendingDelete] = useState(null)
 
     const [loading, setLoading] = useState(false)
 
+    const [error, setError] = useState("")
 
-    /* -------------------------------- */
-    /* GET EXPENSES */
-    /* -------------------------------- */
+
+    /*
+        Fetch expenses and categories
+        when the page loads.
+    */
 
     useEffect(() => {
 
-        dispatch(getExpenses())
+        loadData()
 
-        dispatch(getCategories())
-
-    }, [dispatch])
+    }, [])
 
 
-    /* -------------------------------- */
-    /* CATEGORY NAME */
-    /* -------------------------------- */
-
-    const getCategoryName = (categoryId) => {
-
-        const category = categories.find(
-            item => Number(item.id) === Number(categoryId)
-        )
-
-        return category?.name || "Unknown"
-
-    }
-
-
-    /* -------------------------------- */
-    /* SEARCH */
-    /* -------------------------------- */
-
-    const filteredExpenses = useMemo(() => {
-
-        return expenses.filter(expense => {
-
-            const categoryName =
-                getCategoryName(expense.category_id)
-
-            const text =
-                `${expense.description} ${categoryName}`
-                    .toLowerCase()
-
-            return text.includes(
-                search.toLowerCase()
-            )
-
-        })
-
-    }, [expenses, categories, search])
-
-
-    /* -------------------------------- */
-    /* TOTAL */
-    /* -------------------------------- */
-
-    const total = expenses.reduce(
-        (sum, expense) =>
-            sum + Number(expense.amount || 0),
-        0
-    )
-
-
-    const average =
-        expenses.length > 0
-            ? Math.round(total / expenses.length)
-            : 0
-
-
-    /* -------------------------------- */
-    /* DELETE */
-    /* -------------------------------- */
-
-    const handleDelete = async () => {
-
-        if (!deleteItem) {
-            return
-        }
+    const loadData = async () => {
 
         try {
 
             setLoading(true)
 
-            await dispatch(
-                deleteExpense(deleteItem.id)
-            ).unwrap()
+            setError("")
 
-            await dispatch(
-                getExpenses()
-            )
-
-            setDeleteItem(null)
+            await Promise.all([
+                dispatch(getExpenses()).unwrap(),
+                dispatch(getCategories()).unwrap()
+            ])
 
         } catch (error) {
 
-            console.error(
-                "Delete expense error:",
-                error
+            console.error(error)
+
+            setError(
+                typeof error === "string"
+                    ? error
+                    : "Unable to load expenses."
             )
 
         } finally {
@@ -152,53 +149,87 @@ function ExpensesPage({ onAddExpense }) {
     }
 
 
-    /* -------------------------------- */
-    /* DATE FILTER */
-    /* -------------------------------- */
+    /*
+        Find category name using category_id
+        from the expense.
+    */
 
-    const handleFilter = () => {
+    const getCategoryName = (categoryId) => {
 
-        if (!startDate || !endDate) {
-            return
-        }
-
-        dispatch(
-            getExpensesByDate({
-                startDate,
-                endDate
-            })
+        const category = categories.find(
+            (category) =>
+                String(category.id) === String(categoryId)
         )
 
+        return category
+            ? category.name
+            : "Uncategorized"
     }
 
 
-    /* -------------------------------- */
-    /* CLEAR FILTER */
-    /* -------------------------------- */
+    /*
+        Search expenses locally.
+    */
 
-    const handleClearFilter = () => {
+    const visibleExpenses = useMemo(() => {
 
-        setStartDate("")
+        return expenses.filter((expense) => {
 
-        setEndDate("")
+            const description =
+                expense.description?.toLowerCase() || ""
 
-        setSearch("")
+            const category =
+                getCategoryName(
+                    expense.category_id
+                ).toLowerCase()
 
-        dispatch(
-            getExpenses()
-        )
+            const search =
+                query.toLowerCase()
+
+            return (
+                description.includes(search) ||
+                category.includes(search)
+            )
+
+        })
+
+    }, [expenses, query, categories])
+
+
+    /*
+        Calculate total spending.
+    */
+
+    const total = expenses.reduce(
+        (sum, expense) =>
+            sum + Number(expense.amount || 0),
+        0
+    )
+
+
+    const average =
+        expenses.length > 0
+            ? total / expenses.length
+            : 0
+
+
+    const formatAmount = (amount) => {
+
+        return `₹${Number(amount).toLocaleString(
+            "en-IN",
+            {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }
+        )}`
 
     }
 
-
-    /* -------------------------------- */
-    /* FORMAT DATE */
-    /* -------------------------------- */
 
     const formatDate = (date) => {
 
         if (!date) {
-            return "-"
+            return "—"
         }
 
         return new Date(date).toLocaleDateString(
@@ -213,15 +244,95 @@ function ExpensesPage({ onAddExpense }) {
     }
 
 
-    /* -------------------------------- */
-    /* FORMAT RUPEES */
-    /* -------------------------------- */
+    /*
+        Delete expense.
+    */
 
-    const formatRupees = (amount) => {
+    const handleDelete = async () => {
 
-        return `₹${Number(amount).toLocaleString(
-            "en-IN"
-        )}`
+        if (!pendingDelete) {
+            return
+        }
+
+        try {
+
+            setLoading(true)
+
+            await dispatch(
+                deleteExpense(pendingDelete.id)
+            ).unwrap()
+
+            setPendingDelete(null)
+
+        } catch (error) {
+
+            console.error(error)
+
+        } finally {
+
+            setLoading(false)
+
+        }
+
+    }
+
+
+    /*
+        Filter expenses using backend.
+    */
+
+    const handleFilter = async () => {
+
+        if (!startDate || !endDate) {
+            return
+        }
+
+        try {
+
+            setLoading(true)
+
+            setError("")
+
+            await dispatch(
+                getExpensesByDate({
+                    startDate,
+                    endDate
+                })
+            ).unwrap()
+
+        } catch (error) {
+
+            console.error(error)
+
+            setError(
+                typeof error === "string"
+                    ? error
+                    : "Unable to filter expenses."
+            )
+
+        } finally {
+
+            setLoading(false)
+
+        }
+
+    }
+
+
+    /*
+        Clear date filter
+        and fetch all expenses again.
+    */
+
+    const handleClearFilter = async () => {
+
+        setStartDate("")
+
+        setEndDate("")
+
+        setQuery("")
+
+        await loadData()
 
     }
 
@@ -230,7 +341,8 @@ function ExpensesPage({ onAddExpense }) {
 
         <div className="expenses-page">
 
-            {/* PAGE HEADER */}
+
+            {/* HEADER */}
 
             <div className="expenses-page-heading">
 
@@ -241,11 +353,11 @@ function ExpensesPage({ onAddExpense }) {
                     </p>
 
                     <h1>
-                        Expenses
+                        Expense History
                     </h1>
 
                     <p>
-                        Track and manage your spending
+                        Track and manage your recent spending.
                     </p>
 
                 </div>
@@ -255,7 +367,8 @@ function ExpensesPage({ onAddExpense }) {
                     className="primary-button"
                     onClick={onAddExpense}
                 >
-                    <Plus size={17} />
+
+                    <Plus />
 
                     Add expense
 
@@ -266,26 +379,29 @@ function ExpensesPage({ onAddExpense }) {
 
             {/* SUMMARY */}
 
-            <section className="expense-summary-grid">
+            <section
+                className="expense-summary-grid"
+                aria-label="Expense summary"
+            >
 
-                <div className="expense-summary-card">
+                <div>
 
                     <span>
                         Total expenses
                     </span>
 
                     <strong>
-                        {formatRupees(total)}
+                        {formatAmount(total)}
                     </strong>
 
                     <small>
-                        All recorded expenses
+                        All recorded spending
                     </small>
 
                 </div>
 
 
-                <div className="expense-summary-card">
+                <div>
 
                     <span>
                         Transactions
@@ -296,20 +412,20 @@ function ExpensesPage({ onAddExpense }) {
                     </strong>
 
                     <small>
-                        Recorded expenses
+                        Total expenses
                     </small>
 
                 </div>
 
 
-                <div className="expense-summary-card">
+                <div>
 
                     <span>
                         Average expense
                     </span>
 
                     <strong>
-                        {formatRupees(average)}
+                        {formatAmount(average)}
                     </strong>
 
                     <small>
@@ -321,81 +437,107 @@ function ExpensesPage({ onAddExpense }) {
             </section>
 
 
-            {/* FILTER TOOLBAR */}
+            {/* FILTERS */}
 
-            <section className="expense-toolbar">
+            <section
+                className="expense-toolbar"
+                aria-label="Expense filters"
+            >
 
-                <div className="expense-search">
+                <label className="expense-search">
 
-                    <Search size={17} />
+                    <Search />
 
                     <input
-                        type="text"
-                        placeholder="Search expenses..."
-                        value={search}
-                        onChange={(e) =>
-                            setSearch(e.target.value)
+                        value={query}
+                        onChange={(event) =>
+                            setQuery(event.target.value)
                         }
+                        placeholder="Search expenses"
                     />
 
-                </div>
+                </label>
 
 
-                <div className="expense-date-input">
+                <label className="date-input">
 
-                    <CalendarDays size={16} />
+                    <CalendarDays />
 
                     <input
                         type="date"
                         value={startDate}
-                        onChange={(e) =>
-                            setStartDate(e.target.value)
+                        onChange={(event) =>
+                            setStartDate(event.target.value)
                         }
                     />
 
-                </div>
+                </label>
 
 
-                <span className="date-to">
+                <span className="date-separator">
                     to
                 </span>
 
 
-                <div className="expense-date-input">
+                <label className="date-input">
 
-                    <CalendarDays size={16} />
+                    <CalendarDays />
 
                     <input
                         type="date"
                         value={endDate}
-                        onChange={(e) =>
-                            setEndDate(e.target.value)
+                        onChange={(event) =>
+                            setEndDate(event.target.value)
                         }
                     />
 
-                </div>
+                </label>
 
 
                 <button
                     className="filter-button"
                     onClick={handleFilter}
+                    disabled={loading}
                 >
 
-                    <Filter size={16} />
+                    <Filter />
 
-                    Filter
+                    Apply Filter
 
                 </button>
 
 
                 <button
-                    className="clear-filter-button"
+                    className="clear-filter"
                     onClick={handleClearFilter}
+                    disabled={loading}
                 >
-                    Clear
+                    Clear Filter
                 </button>
 
             </section>
+
+
+            {/* ERROR */}
+
+            {error && (
+
+                <div className="expense-error">
+
+                    <p>
+                        {error}
+                    </p>
+
+                    <button
+                        className="primary-button"
+                        onClick={loadData}
+                    >
+                        Try again
+                    </button>
+
+                </div>
+
+            )}
 
 
             {/* EXPENSE TABLE */}
@@ -411,7 +553,7 @@ function ExpensesPage({ onAddExpense }) {
                         </h2>
 
                         <p>
-                            {filteredExpenses.length} transactions
+                            {expenses.length} total expenses
                         </p>
 
                     </div>
@@ -419,23 +561,48 @@ function ExpensesPage({ onAddExpense }) {
                 </div>
 
 
-                {filteredExpenses.length === 0 ? (
+                {/* LOADING */}
+
+                {loading ? (
+
+                    <div className="expense-skeleton-list">
+
+                        {[1, 2, 3].map((item) => (
+
+                            <div
+                                className="expense-skeleton"
+                                key={item}
+                            >
+
+                                <i />
+
+                                <span />
+
+                                <b />
+
+                            </div>
+
+                        ))}
+
+                    </div>
+
+                ) : visibleExpenses.length === 0 ? (
+
+                    /* EMPTY */
 
                     <div className="expense-empty">
 
-                        <div className="expense-empty-icon">
-
-                            <WalletCards size={25} />
-
-                        </div>
+                        <span className="empty-icon">
+                            ₹
+                        </span>
 
                         <h3>
-                            No expenses found
+                            No expenses yet
                         </h3>
 
                         <p>
-                            Start tracking your spending by
-                            adding your first expense.
+                            Start tracking your spending
+                            by adding your first expense.
                         </p>
 
                         <button
@@ -443,9 +610,9 @@ function ExpensesPage({ onAddExpense }) {
                             onClick={onAddExpense}
                         >
 
-                            <Plus size={17} />
+                            <Plus />
 
-                            Add expense
+                            Add your first expense
 
                         </button>
 
@@ -453,213 +620,212 @@ function ExpensesPage({ onAddExpense }) {
 
                 ) : (
 
-                    <div className="expenses-table-wrapper">
+                    <>
 
-                        <table>
+                        {/* DESKTOP TABLE */}
 
-                            <thead>
+                        <div className="expenses-table-wrap">
 
-                                <tr>
+                            <table>
 
-                                    <th>
-                                        Description
-                                    </th>
+                                <thead>
 
-                                    <th>
-                                        Category
-                                    </th>
+                                    <tr>
 
-                                    <th>
-                                        Date
-                                    </th>
+                                        <th>
+                                            Description
+                                        </th>
 
-                                    <th className="amount-heading">
-                                        Amount
-                                    </th>
+                                        <th>
+                                            Category
+                                        </th>
 
-                                    <th>
-                                        Action
-                                    </th>
+                                        <th>
+                                            Date
+                                        </th>
 
-                                </tr>
+                                        <th className="amount-head">
+                                            Amount
+                                        </th>
 
-                            </thead>
+                                        <th />
 
+                                    </tr>
 
-                            <tbody>
-
-                                {filteredExpenses.map(
-                                    expense => (
-
-                                        <tr
-                                            key={expense.id}
-                                        >
-
-                                            <td>
-
-                                                <span className="expense-description">
-                                                    {expense.description}
-                                                </span>
-
-                                            </td>
+                                </thead>
 
 
-                                            <td>
+                                <tbody>
 
-                                                <span className="expense-category">
+                                    {visibleExpenses.map(
+                                        (expense) => (
 
-                                                    {getCategoryName(
-                                                        expense.category_id
+                                            <tr key={expense.id}>
+
+                                                <td className="expense-description">
+
+                                                    {expense.description ||
+                                                        "Untitled expense"}
+
+                                                </td>
+
+
+                                                <td>
+
+                                                    <span className="expense-category-badge">
+
+                                                        {getCategoryName(
+                                                            expense.category_id
+                                                        )}
+
+                                                    </span>
+
+                                                </td>
+
+
+                                                <td className="expense-date">
+
+                                                    {formatDate(
+                                                        expense.date
                                                     )}
 
-                                                </span>
-
-                                            </td>
+                                                </td>
 
 
-                                            <td className="expense-date">
+                                                <td className="expense-amount">
+
+                                                    {formatAmount(
+                                                        expense.amount
+                                                    )}
+
+                                                </td>
+
+
+                                                <td>
+
+                                                    <button
+                                                        className="expense-delete"
+                                                        onClick={() =>
+                                                            setPendingDelete(
+                                                                expense
+                                                            )
+                                                        }
+                                                        aria-label="Delete expense"
+                                                    >
+
+                                                        <Trash2 />
+
+                                                    </button>
+
+                                                </td>
+
+                                            </tr>
+
+                                        )
+                                    )}
+
+                                </tbody>
+
+                            </table>
+
+                        </div>
+
+
+                        {/* MOBILE */}
+
+                        <div className="expense-mobile-list">
+
+                            {visibleExpenses.map(
+                                (expense) => (
+
+                                    <article
+                                        className="expense-mobile-card"
+                                        key={expense.id}
+                                    >
+
+                                        <div>
+
+                                            <strong>
+                                                {expense.description ||
+                                                    "Untitled expense"}
+                                            </strong>
+
+                                            <span>
+
+                                                {getCategoryName(
+                                                    expense.category_id
+                                                )}
+
+                                                {" · "}
 
                                                 {formatDate(
                                                     expense.date
                                                 )}
 
-                                            </td>
+                                            </span>
+
+                                        </div>
 
 
-                                            <td className="expense-amount">
+                                        <div>
 
-                                                {formatRupees(
+                                            <b>
+                                                {formatAmount(
                                                     expense.amount
                                                 )}
+                                            </b>
 
-                                            </td>
+                                            <button
+                                                className="expense-delete"
+                                                onClick={() =>
+                                                    setPendingDelete(
+                                                        expense
+                                                    )
+                                                }
+                                            >
 
+                                                <Trash2 />
 
-                                            <td>
+                                            </button>
 
-                                                <button
-                                                    className="expense-delete-button"
-                                                    onClick={() =>
-                                                        setDeleteItem(
-                                                            expense
-                                                        )
-                                                    }
-                                                    aria-label="Delete expense"
-                                                >
+                                        </div>
 
-                                                    <Trash2
-                                                        size={17}
-                                                    />
+                                    </article>
 
-                                                </button>
+                                )
+                            )}
 
-                                            </td>
+                        </div>
 
-                                        </tr>
-
-                                    )
-                                )}
-
-                            </tbody>
-
-                        </table>
-
-                    </div>
+                    </>
 
                 )}
 
             </section>
 
 
-            {/* DELETE MODAL */}
+            {/* DELETE DIALOG */}
 
-            {deleteItem && (
+            {pendingDelete && (
 
-                <div className="delete-modal-overlay">
+                <DeleteExpenseDialog
 
-                    <div className="delete-modal">
+                    expense={pendingDelete}
 
-                        <button
-                            className="delete-modal-close"
-                            onClick={() =>
-                                setDeleteItem(null)
-                            }
-                        >
+                    onCancel={() =>
+                        setPendingDelete(null)
+                    }
 
-                            <X size={18} />
+                    onConfirm={handleDelete}
 
-                        </button>
-
-
-                        <div className="delete-modal-icon">
-
-                            <Trash2 size={23} />
-
-                        </div>
-
-
-                        <h2>
-                            Delete this expense?
-                        </h2>
-
-
-                        <p>
-
-                            Are you sure you want to
-                            delete{" "}
-
-                            <strong>
-                                {deleteItem.description}
-                            </strong>
-
-                            ?
-
-                            <br />
-
-                            This action cannot be undone.
-
-                        </p>
-
-
-                        <div className="delete-modal-actions">
-
-                            <button
-                                className="secondary-button"
-                                onClick={() =>
-                                    setDeleteItem(null)
-                                }
-                                disabled={loading}
-                            >
-                                Cancel
-                            </button>
-
-
-                            <button
-                                className="danger-button"
-                                onClick={handleDelete}
-                                disabled={loading}
-                            >
-
-                                <Trash2 size={16} />
-
-                                {loading
-                                    ? "Deleting..."
-                                    : "Delete expense"
-                                }
-
-                            </button>
-
-                        </div>
-
-                    </div>
-
-                </div>
+                />
 
             )}
 
         </div>
 
     )
+
 }
 
 export default ExpensesPage
