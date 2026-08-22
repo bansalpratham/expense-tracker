@@ -45,51 +45,68 @@ function Categories() {
 
     const handleAddCategory = async (e) => {
 
-        e.preventDefault()
+    e.preventDefault()
 
-        if (!categoryName.trim()) {
-            return
-        }
-
-        setLoading(true)
-
-        try {
-
-            await dispatch(
-                addCategory(categoryName.trim())
-            ).unwrap()
-
-            setCategoryName("")
-            setShowForm(false)
-
-        } catch (error) {
-
-            console.error("Failed to add category:", error)
-
-        } finally {
-
-            setLoading(false)
-
-        }
+    if (!categoryName.trim()) {
+        return
     }
+
+    setLoading(true)
+
+    try {
+
+        await dispatch(
+            addCategory(categoryName.trim())
+        ).unwrap()
+
+
+        // Refresh category spending
+        await dispatch(
+            getCategorySpending()
+        ).unwrap()
+
+
+        setCategoryName("")
+
+        setShowForm(false)
+
+    } catch (error) {
+
+        console.error(
+            "Failed to add category:",
+            error
+        )
+
+    } finally {
+
+        setLoading(false)
+
+    }
+}
 
 
     const handleDeleteCategory = async (id) => {
 
-        try {
+    try {
 
-            await dispatch(
-                deleteCategory(id)
-            ).unwrap()
+        await dispatch(
+            deleteCategory(id)
+        ).unwrap()
 
-            dispatch(getCategorySpending())
 
-        } catch (error) {
+        await dispatch(
+            getCategorySpending()
+        ).unwrap()
 
-            console.error("Failed to delete category:", error)
+    } catch (error) {
 
-        }
+        console.error(
+            "Failed to delete category:",
+            error
+        )
+
     }
+}
 
 
     return (
@@ -355,70 +372,27 @@ function Categories() {
 
                         <div className="category-grid">
 
-                            {categories.map((category) => {
+                           {categorySpending.map((item) => (
 
-                                const spendingItem =
-                                    categorySpending.find(
-                                        (item) =>
-                                            item.category_id === category.id ||
-                                            item.categoryId === category.id
-                                    )
+    <div
+        className="spending-row"
+        key={item.id}
+    >
 
-                                const spending =
-                                    spendingItem?.total ||
-                                    spendingItem?.spending ||
-                                    0
+        <span>
+            {item.name}
+        </span>
 
-                                return (
+        <strong>
+            ₹
+            {Number(
+                item.total_spending || 0
+            ).toFixed(2)}
+        </strong>
 
-                                    <div
-                                        className="category-card"
-                                        key={category.id}
-                                    >
+    </div>
 
-                                        <div className="category-card-top">
-
-                                            <div className="category-icon">
-                                                <Tag size={21} />
-                                            </div>
-
-                                            <button
-                                                className="delete-category-btn"
-                                                onClick={() =>
-                                                    handleDeleteCategory(
-                                                        category.id
-                                                    )
-                                                }
-                                                title="Delete category"
-                                            >
-                                                <Trash2 size={17} />
-                                            </button>
-
-                                        </div>
-
-
-                                        <h3>
-                                            {category.name}
-                                        </h3>
-
-
-                                        <div className="category-spending">
-
-                                            <span>
-                                                Spending
-                                            </span>
-
-                                            <strong>
-                                                ₹{Number(spending).toFixed(2)}
-                                            </strong>
-
-                                        </div>
-
-                                    </div>
-
-                                )
-
-                            })}
+))}
 
                         </div>
 

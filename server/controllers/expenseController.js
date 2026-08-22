@@ -141,19 +141,14 @@ const getExpenseByDate = async (req,res)=>{
             return res.status(400).json("endDate not provided")
         }
 
-        const result = await pool.query(
+       const result = await pool.query(
     `SELECT * FROM expenses
      WHERE user_id=$1
      AND date BETWEEN $2 AND $3`,
     [userId, startDate, endDate]
 )
 
-         if (result.rows.length === 0)
-{
-    return res.status(404).json("Expense not found")
-}
-
-        return res.status(200).json(result.rows)
+return res.status(200).json(result.rows)
 
     } catch (error) {
                  console.error(error);
