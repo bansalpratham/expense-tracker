@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react"
+
 import {
     CalendarDays,
     Filter,
@@ -16,7 +17,9 @@ import {
     getExpensesByDate
 } from "../redux/slices/expenseSlice"
 
-import { getCategories } from "../redux/slices/categorySlice"
+import {
+    getCategories
+} from "../redux/slices/categorySlice"
 
 
 function DeleteExpenseDialog({ expense, onCancel, onConfirm }) {

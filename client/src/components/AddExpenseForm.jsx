@@ -12,7 +12,7 @@ const today = () => {
 }
 
 function AddExpenseForm({
-    categories,
+    categories = [],
     onSubmit,
     onCancel,
     loading = false
@@ -84,7 +84,6 @@ function AddExpenseForm({
     }
 
     return (
-
         <section
             style={{
                 width: "100%",
@@ -166,7 +165,6 @@ function AddExpenseForm({
 
                 </div>
 
-
                 <button
                     type="button"
                     onClick={onCancel}
@@ -191,7 +189,6 @@ function AddExpenseForm({
 
             </div>
 
-
             <p
                 style={{
                     margin: "0 0 26px",
@@ -202,7 +199,6 @@ function AddExpenseForm({
             >
                 Capture the details now and keep your spending history accurate.
             </p>
-
 
             {/* FORM */}
 
@@ -265,7 +261,6 @@ function AddExpenseForm({
 
                     </div>
 
-
                     {/* DESCRIPTION */}
 
                     <div>
@@ -295,7 +290,6 @@ function AddExpenseForm({
                         )}
 
                     </div>
-
 
                     {/* DATE */}
 
@@ -340,7 +334,6 @@ function AddExpenseForm({
 
                     </div>
 
-
                     {/* CATEGORY */}
 
                     <div>
@@ -366,7 +359,7 @@ function AddExpenseForm({
                                 Select category
                             </option>
 
-                            {categories?.map((category) => (
+                            {categories.map((category) => (
 
                                 <option
                                     key={category.id}
@@ -386,7 +379,6 @@ function AddExpenseForm({
                     </div>
 
                 </div>
-
 
                 {/* FOOTER BUTTONS */}
 
@@ -410,7 +402,6 @@ function AddExpenseForm({
                     >
                         Cancel
                     </button>
-
 
                     <button
                         type="submit"
