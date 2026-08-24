@@ -68,7 +68,7 @@ const SignUp = async (req, res) => {
             },
             process.env.JWT_SECRET,
             {
-                expiresIn: "1d"
+                expiresIn: "7d"
             }
         )
 
@@ -138,7 +138,7 @@ try {
     const token = jwt.sign(
         { id: existingUser.rows[0].id },
         process.env.JWT_SECRET,
-        { expiresIn: "1d" }
+        { expiresIn: "7d" }
     );
 
     res.status(200).json({
@@ -214,7 +214,7 @@ const SignInWithGoogle = async (req, res) => {
         const token = jwt.sign(
             { id: user.id },
             process.env.JWT_SECRET,
-            { expiresIn: "1d" }
+            { expiresIn: "7d" }
         );
 
         return res.status(200).json({

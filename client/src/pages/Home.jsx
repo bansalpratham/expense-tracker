@@ -65,12 +65,6 @@ import {
     getBudget
 } from "../redux/slices/budgetSlice"
 
-import {
-    getNotifications,
-    markNotificationAsRead,
-    markAllNotificationsAsRead
-} from "../redux/slices/notificationSlice"
-
 
 /*
 ========================================
@@ -174,13 +168,146 @@ function Home() {
         (state) => state.category.categorySpending
     )
 
-    const notifications = useSelector(
-        (state) => state.notification.notifications
-    )
 
-    const notificationLoading = useSelector(
-        (state) => state.notification.loading
-    )
+    /*
+    ========================================
+    USER
+    ========================================
+    */
+
+    const [user, setUser] = useState(null)
+
+
+    useEffect(() => {
+
+        try {
+
+            const storedUser =
+                localStorage.getItem("user")
+
+            if (storedUser) {
+
+                setUser(
+                    JSON.parse(storedUser)
+                )
+
+            }
+
+        } catch (error) {
+
+            console.error(
+                "Failed to load user",
+                error
+            )
+
+        }
+
+    }, [])
+
+
+    /*
+    ========================================
+    USERNAME
+    ========================================
+    */
+
+    const username =
+        user?.username ||
+        user?.userName ||
+        "User"
+
+
+    /*
+    ========================================
+    EMAIL
+    ========================================
+    */
+
+    const email =
+        user?.email ||
+        "Your account"
+
+
+    /*
+    ========================================
+    GET USER INITIALS
+    ========================================
+    */
+
+    const getInitials = (name = "") => {
+
+        const words = name
+            .trim()
+            .split(" ")
+            .filter(Boolean)
+
+
+        if (words.length === 0) {
+            return "U"
+        }
+
+
+        if (words.length === 1) {
+
+            return words[0]
+                .slice(0, 2)
+                .toUpperCase()
+
+        }
+
+
+        return words
+            .slice(0, 2)
+            .map(
+                (word) =>
+                    word[0]
+            )
+            .join("")
+            .toUpperCase()
+
+    }
+
+
+    const initials =
+        getInitials(username)
+
+
+    /*
+    ========================================
+    DYNAMIC GREETING
+    ========================================
+    */
+
+    const getGreeting = () => {
+
+        const hour =
+            new Date().getHours()
+
+
+        if (hour >= 5 && hour < 12) {
+
+            return "Good morning"
+
+        }
+
+
+        if (hour >= 12 && hour < 17) {
+
+            return "Good afternoon"
+
+        }
+
+
+        if (hour >= 17 && hour < 21) {
+
+            return "Good evening"
+
+        }
+
+
+        return "Good evening"
+
+    }
 
 
     /*
@@ -189,22 +316,17 @@ function Home() {
     ========================================
     */
 
-    const [menuOpen, setMenuOpen] = useState(false)
-
-    const [notice, setNotice] = useState("")
-
-    const [formOpen, setFormOpen] = useState(false)
-
-    const [loading, setLoading] = useState(false)
-
-    const [notificationOpen, setNotificationOpen] =
+    const [menuOpen, setMenuOpen] =
         useState(false)
 
-    /*
-    SEARCH STATE
-    */
+    const [notice, setNotice] =
+        useState("")
 
-    const [searchTerm, setSearchTerm] = useState("")
+    const [formOpen, setFormOpen] =
+        useState(false)
+
+    const [loading, setLoading] =
+        useState(false)
 
 
     /*
@@ -224,8 +346,6 @@ function Home() {
         dispatch(getCategorySpending())
 
         dispatch(getBudget())
-
-        dispatch(getNotifications())
 
     }, [dispatch])
 
@@ -260,120 +380,6 @@ function Home() {
         navigate(path)
 
         setMenuOpen(false)
-
-        setNotificationOpen(false)
-
-    }
-
-
-    /*
-    ========================================
-    SEARCH EXPENSES
-    ========================================
-    
-    Search by:
-    
-    1. Description
-    2. Category name
-    3. Amount
-    
-    Example:
-    
-    "food"
-    "salary"
-    "shopping"
-    "500"
-    
-    ========================================
-    */
-
-    const filteredExpenses = useMemo(() => {
-
-        const query = searchTerm
-            .trim()
-            .toLowerCase()
-
-        /*
-        If search box is empty,
-        show all expenses.
-        */
-
-        if (!query) {
-
-            return expenses
-
-        }
-
-
-        return expenses.filter(
-            (expense) => {
-
-                /*
-                Find category of expense
-                */
-
-                const category =
-                    categories.find(
-                        (item) =>
-                            Number(item.id) ===
-                            Number(expense.category_id)
-                    )
-
-
-                const description =
-                    String(
-                        expense.description || ""
-                    ).toLowerCase()
-
-
-                const categoryName =
-                    String(
-                        category?.name || ""
-                    ).toLowerCase()
-
-
-                const amount =
-                    String(
-                        expense.amount || ""
-                    ).toLowerCase()
-
-
-                const date =
-                    String(
-                        expense.date || ""
-                    ).toLowerCase()
-
-
-                /*
-                Match against any field
-                */
-
-                return (
-                    description.includes(query) ||
-                    categoryName.includes(query) ||
-                    amount.includes(query) ||
-                    date.includes(query)
-                )
-
-            }
-        )
-
-    }, [
-        expenses,
-        categories,
-        searchTerm
-    ])
-
-
-    /*
-    ========================================
-    SEARCH CLEAR
-    ========================================
-    */
-
-    const clearSearch = () => {
-
-        setSearchTerm("")
 
     }
 
@@ -410,12 +416,8 @@ function Home() {
             ).unwrap()
 
 
-            await dispatch(
-                getNotifications()
-            ).unwrap()
-
-
             setFormOpen(false)
+
 
             showNotice(
                 "Expense added successfully"
@@ -465,16 +467,6 @@ function Home() {
             ).unwrap()
 
 
-            await dispatch(
-                getExpenses()
-            ).unwrap()
-
-
-            await dispatch(
-                getNotifications()
-            ).unwrap()
-
-
             showNotice(
                 "Expense deleted successfully"
             )
@@ -487,77 +479,6 @@ function Home() {
                 typeof error === "string"
                     ? error
                     : "Failed to delete expense"
-            )
-
-        }
-
-    }
-
-
-    /*
-    ========================================
-    MARK ONE NOTIFICATION AS READ
-    ========================================
-    */
-
-    const handleNotificationClick = async (
-        notification
-    ) => {
-
-        try {
-
-            if (!notification.is_read) {
-
-                await dispatch(
-                    markNotificationAsRead(
-                        notification.id
-                    )
-                ).unwrap()
-
-            }
-
-            setNotificationOpen(false)
-
-        } catch (error) {
-
-            console.error(
-                "Failed to mark notification as read:",
-                error
-            )
-
-        }
-
-    }
-
-
-    /*
-    ========================================
-    MARK ALL NOTIFICATIONS AS READ
-    ========================================
-    */
-
-    const handleMarkAllNotificationsRead = async () => {
-
-        try {
-
-            await dispatch(
-                markAllNotificationsAsRead()
-            ).unwrap()
-
-
-            showNotice(
-                "All notifications marked as read"
-            )
-
-        } catch (error) {
-
-            console.error(
-                "Failed to mark notifications as read:",
-                error
-            )
-
-            showNotice(
-                "Failed to mark notifications as read"
             )
 
         }
@@ -606,41 +527,19 @@ function Home() {
     /*
     ========================================
     TOTAL SHOWN
-
-    IMPORTANT:
-    Now uses filteredExpenses
-    instead of expenses.
-
-    So when user searches,
-    total shown changes too.
     ========================================
     */
 
     const totalVisible = useMemo(() => {
 
-        return filteredExpenses.reduce(
+        return expenses.reduce(
             (sum, expense) =>
-                sum + Number(expense.amount),
+                sum +
+                Number(expense.amount),
             0
         )
 
-    }, [filteredExpenses])
-
-
-    /*
-    ========================================
-    UNREAD NOTIFICATIONS
-    ========================================
-    */
-
-    const unreadNotifications = useMemo(() => {
-
-        return notifications.filter(
-            (notification) =>
-                !notification.is_read
-        ).length
-
-    }, [notifications])
+    }, [expenses])
 
 
     /*
@@ -701,6 +600,9 @@ function Home() {
                 }`}
             >
 
+
+                {/* BRAND */}
+
                 <div
                     className="brand"
                     onClick={() =>
@@ -747,6 +649,8 @@ function Home() {
 
                 </div>
 
+
+                {/* NAVIGATION */}
 
                 <nav
                     className="nav-list"
@@ -795,7 +699,12 @@ function Home() {
                 </nav>
 
 
+                {/* SIDEBAR BOTTOM */}
+
                 <div className="sidebar-bottom">
+
+
+                    {/* SETTINGS */}
 
                     <button
                         className="nav-item"
@@ -813,21 +722,29 @@ function Home() {
                     </button>
 
 
+                    {/* PROFILE */}
+
                     <div className="profile">
 
                         <div className="avatar">
-                            JD
+
+                            {initials}
+
                         </div>
 
 
                         <div className="min-w-0">
 
                             <p className="profile-name">
-                                ExpenseFlow User
+
+                                {username}
+
                             </p>
 
                             <p className="profile-email">
-                                Your account
+
+                                {email}
+
                             </p>
 
                         </div>
@@ -843,6 +760,8 @@ function Home() {
 
             </aside>
 
+
+            {/* MOBILE SCRIM */}
 
             {menuOpen && (
 
@@ -871,6 +790,8 @@ function Home() {
                 <header className="topbar">
 
 
+                    {/* MOBILE MENU */}
+
                     <button
                         className="mobile-menu"
                         aria-label="Open menu"
@@ -884,6 +805,8 @@ function Home() {
                     </button>
 
 
+                    {/* PAGE TITLE */}
+
                     <div>
 
                         <p className="eyebrow">
@@ -891,219 +814,54 @@ function Home() {
                         </p>
 
                         <h1>
-                            Good morning
+
+                            {getGreeting()},{" "}
+                            {username}
+
                         </h1>
 
                     </div>
 
 
+                    {/* TOP ACTIONS */}
+
                     <div className="topbar-actions">
 
 
-                        {/* ========================================
-                            SEARCH
-                        ======================================== */}
+                        {/* SEARCH */}
 
-                        <div className="dashboard-search">
+                        <button
+                            className="icon-button"
+                            aria-label="Search"
+                            onClick={() =>
+                                showNotice(
+                                    "Search feature coming soon"
+                                )
+                            }
+                        >
 
                             <Search />
 
-                            <input
-                                type="text"
-                                placeholder="Search expenses..."
-                                value={searchTerm}
-                                onChange={(event) =>
-                                    setSearchTerm(
-                                        event.target.value
-                                    )
-                                }
-                            />
+                        </button>
 
 
-                            {searchTerm && (
+                        {/* NOTIFICATIONS */}
 
-                                <button
-                                    type="button"
-                                    className="dashboard-search-clear"
-                                    onClick={
-                                        clearSearch
-                                    }
-                                    aria-label="Clear search"
-                                >
+                        <button
+                            className="icon-button notification"
+                            aria-label="Notifications"
+                            onClick={() =>
+                                showNotice(
+                                    "You are all caught up"
+                                )
+                            }
+                        >
 
-                                    <X />
+                            <Bell />
 
-                                </button>
+                            <i />
 
-                            )}
-
-                        </div>
-
-
-                        {/* ========================================
-                            NOTIFICATIONS
-                        ======================================== */}
-
-                        <div className="notification-wrapper">
-
-                            <button
-                                className="icon-button notification"
-                                aria-label="Notifications"
-                                onClick={() =>
-                                    setNotificationOpen(
-                                        (previous) =>
-                                            !previous
-                                    )
-                                }
-                            >
-
-                                <Bell />
-
-                                {unreadNotifications > 0 && (
-
-                                    <span className="notification-badge">
-
-                                        {unreadNotifications > 9
-                                            ? "9+"
-                                            : unreadNotifications}
-
-                                    </span>
-
-                                )}
-
-                            </button>
-
-
-                            {notificationOpen && (
-
-                                <div className="notification-dropdown">
-
-                                    <div className="notification-header">
-
-                                        <div>
-
-                                            <strong>
-                                                Notifications
-                                            </strong>
-
-                                            <span>
-                                                {unreadNotifications} unread
-                                            </span>
-
-                                        </div>
-
-
-                                        {unreadNotifications > 0 && (
-
-                                            <button
-                                                onClick={
-                                                    handleMarkAllNotificationsRead
-                                                }
-                                            >
-
-                                                Mark all read
-
-                                            </button>
-
-                                        )}
-
-                                    </div>
-
-
-                                    <div className="notification-list">
-
-                                        {notificationLoading ? (
-
-                                            <p className="notification-empty">
-
-                                                Loading notifications...
-
-                                            </p>
-
-                                        ) : notifications.length === 0 ? (
-
-                                            <p className="notification-empty">
-
-                                                No notifications yet.
-
-                                            </p>
-
-                                        ) : (
-
-                                            notifications.map(
-                                                (notification) => (
-
-                                                    <button
-                                                        key={
-                                                            notification.id
-                                                        }
-                                                        className={`notification-item ${
-                                                            !notification.is_read
-                                                                ? "unread"
-                                                                : ""
-                                                        }`}
-                                                        onClick={() =>
-                                                            handleNotificationClick(
-                                                                notification
-                                                            )
-                                                        }
-                                                    >
-
-                                                        <div className="notification-dot" />
-
-
-                                                        <div className="notification-content">
-
-                                                            <strong>
-
-                                                                {
-                                                                    notification.title
-                                                                }
-
-                                                            </strong>
-
-
-                                                            <p>
-
-                                                                {
-                                                                    notification.message
-                                                                }
-
-                                                            </p>
-
-
-                                                            <span>
-
-                                                                {new Date(
-                                                                    notification.created_at
-                                                                ).toLocaleString(
-                                                                    "en-IN",
-                                                                    {
-                                                                        day: "numeric",
-                                                                        month: "short",
-                                                                        hour: "2-digit",
-                                                                        minute: "2-digit"
-                                                                    }
-                                                                )}
-
-                                                            </span>
-
-                                                        </div>
-
-                                                    </button>
-
-                                                )
-                                            )
-
-                                        )}
-
-                                    </div>
-
-                                </div>
-
-                            )}
-
-                        </div>
+                        </button>
 
 
                         {/* PROFILE */}
@@ -1111,11 +869,13 @@ function Home() {
                         <button
                             className="top-avatar"
                             onClick={() =>
-                                navigateTo("/profile")
+                                showNotice(
+                                    "Profile settings coming soon"
+                                )
                             }
                         >
 
-                            JD
+                            {initials}
 
                         </button>
 
@@ -1131,7 +891,9 @@ function Home() {
                 <div className="content-wrap">
 
 
-                    {/* ADD EXPENSE */}
+                    {/* ========================================
+                        ADD EXPENSE FORM
+                    ======================================== */}
 
                     {formOpen && (
 
@@ -1149,6 +911,10 @@ function Home() {
                     )}
 
 
+                    {/* ========================================
+                        WELCOME
+                    ======================================== */}
+
                     {!formOpen && (
 
                         <section className="welcome-row">
@@ -1156,12 +922,16 @@ function Home() {
                             <div>
 
                                 <p className="section-kicker">
+
                                     Your financial overview
+
                                 </p>
 
                                 <p className="muted-copy">
+
                                     Here&apos;s what&apos;s
                                     happening with your money.
+
                                 </p>
 
                             </div>
@@ -1186,49 +956,13 @@ function Home() {
 
 
                     {/* ========================================
-                        SEARCH RESULT INFO
-                    ======================================== */}
-
-                    {searchTerm.trim() && (
-
-                        <div className="search-result-info">
-
-                            <div>
-
-                                <Search />
-
-                                <span>
-
-                                    Showing results for{" "}
-
-                                    <strong>
-                                        "{searchTerm}"
-                                    </strong>
-
-                                </span>
-
-                            </div>
-
-
-                            <span>
-
-                                {filteredExpenses.length}{" "}
-                                {filteredExpenses.length === 1
-                                    ? "expense"
-                                    : "expenses"}
-
-                            </span>
-
-                        </div>
-
-                    )}
-
-
-                    {/* ========================================
                         METRICS
                     ======================================== */}
 
                     <section className="metrics-grid">
+
+
+                        {/* TOTAL SPENDING */}
 
                         <MetricCard
                             label="Total spending"
@@ -1239,6 +973,8 @@ function Home() {
                         />
 
 
+                        {/* MONTHLY */}
+
                         <MetricCard
                             label="This month"
                             value={`₹${Number(
@@ -1248,6 +984,8 @@ function Home() {
                         />
 
 
+                        {/* WEEKLY */}
+
                         <MetricCard
                             label="This week"
                             value={`₹${Number(
@@ -1256,6 +994,8 @@ function Home() {
                             icon={CalendarDays}
                         />
 
+
+                        {/* BUDGET */}
 
                         <MetricCard
                             label="Budget left"
@@ -1282,17 +1022,24 @@ function Home() {
                         <div>
 
                             <p className="section-title">
+
                                 Quick actions
+
                             </p>
 
                             <p className="muted-copy">
+
                                 Stay on top of your finances.
+
                             </p>
 
                         </div>
 
 
                         <div className="quick-actions">
+
+
+                            {/* ADD EXPENSE */}
 
                             <button
                                 onClick={() =>
@@ -1306,6 +1053,8 @@ function Home() {
 
                             </button>
 
+
+                            {/* MANAGE CATEGORIES */}
 
                             <button
                                 onClick={() =>
@@ -1321,6 +1070,8 @@ function Home() {
 
                             </button>
 
+
+                            {/* SET BUDGET */}
 
                             <button
                                 onClick={() =>
@@ -1348,7 +1099,9 @@ function Home() {
                     <section className="charts-grid">
 
 
-                        {/* SPENDING OVERVIEW */}
+                        {/* ========================================
+                            SPENDING OVERVIEW
+                        ======================================== */}
 
                         <div className="panel trend-panel">
 
@@ -1357,11 +1110,15 @@ function Home() {
                                 <div>
 
                                     <p className="section-title">
+
                                         Spending overview
+
                                     </p>
 
                                     <p className="muted-copy">
+
                                         Your current spending
+
                                     </p>
 
                                 </div>
@@ -1473,7 +1230,9 @@ function Home() {
                         </div>
 
 
-                        {/* CATEGORY CHART */}
+                        {/* ========================================
+                            CATEGORY CHART
+                        ======================================== */}
 
                         <div className="panel category-panel">
 
@@ -1482,11 +1241,15 @@ function Home() {
                                 <div>
 
                                     <p className="section-title">
+
                                         By category
+
                                     </p>
 
                                     <p className="muted-copy">
+
                                         Spending breakdown
+
                                     </p>
 
                                 </div>
@@ -1570,7 +1333,9 @@ function Home() {
                                                 </strong>
 
                                                 <span>
+
                                                     total
+
                                                 </span>
 
                                             </div>
@@ -1624,7 +1389,9 @@ function Home() {
                                 ) : (
 
                                     <p className="muted-copy">
+
                                         No category spending yet.
+
                                     </p>
 
                                 )}
@@ -1649,26 +1416,22 @@ function Home() {
 
                                 <p className="section-title">
 
-                                    {searchTerm.trim()
-                                        ? "Search results"
-                                        : "Recent expenses"}
+                                    Recent expenses
 
                                 </p>
 
                                 <p className="muted-copy">
 
-                                    {filteredExpenses.length}
+                                    {expenses.length}
                                     {" "}
-                                    {filteredExpenses.length === 1
-                                        ? "transaction"
-                                        : "transactions"}
+                                    transactions
 
                                 </p>
 
                             </div>
 
 
-                            {filteredExpenses.length > 0 && (
+                            {expenses.length > 0 && (
 
                                 <button
                                     className="more-button"
@@ -1722,7 +1485,7 @@ function Home() {
 
                                 <tbody>
 
-                                    {filteredExpenses.length === 0 ? (
+                                    {expenses.length === 0 ? (
 
                                         <tr>
 
@@ -1738,26 +1501,9 @@ function Home() {
 
                                                 <p className="muted-copy">
 
-                                                    {searchTerm.trim()
-                                                        ? "No expenses found."
-                                                        : "No expenses yet."}
+                                                    No expenses yet.
 
                                                 </p>
-
-                                                {searchTerm.trim() && (
-
-                                                    <button
-                                                        className="clear-search-button"
-                                                        onClick={
-                                                            clearSearch
-                                                        }
-                                                    >
-
-                                                        Clear search
-
-                                                    </button>
-
-                                                )}
 
                                             </td>
 
@@ -1765,7 +1511,7 @@ function Home() {
 
                                     ) : (
 
-                                        filteredExpenses.map(
+                                        expenses.map(
                                             (
                                                 expense
                                             ) => {
@@ -1792,6 +1538,9 @@ function Home() {
                                                         }
                                                     >
 
+
+                                                        {/* DESCRIPTION */}
+
                                                         <td>
 
                                                             <div className="merchant">
@@ -1816,6 +1565,8 @@ function Home() {
                                                         </td>
 
 
+                                                        {/* CATEGORY */}
+
                                                         <td>
 
                                                             <span className="category-pill">
@@ -1829,6 +1580,8 @@ function Home() {
                                                         </td>
 
 
+                                                        {/* DATE */}
+
                                                         <td className="date-cell">
 
                                                             {
@@ -1837,6 +1590,8 @@ function Home() {
 
                                                         </td>
 
+
+                                                        {/* AMOUNT */}
 
                                                         <td className="amount-cell">
 
@@ -1849,6 +1604,8 @@ function Home() {
 
                                                         </td>
 
+
+                                                        {/* DELETE */}
 
                                                         <td>
 
@@ -1884,6 +1641,8 @@ function Home() {
                         </div>
 
 
+                        {/* TABLE FOOTER */}
+
                         <div className="table-footer">
 
                             <span>
@@ -1896,11 +1655,9 @@ function Home() {
 
                             <span>
 
-                                {filteredExpenses.length}
+                                {expenses.length}
                                 {" "}
-                                {filteredExpenses.length === 1
-                                    ? "expense"
-                                    : "expenses"}
+                                expenses
 
                             </span>
 
