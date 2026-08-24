@@ -6,7 +6,7 @@ import Home from "./pages/Home"
 import Expenses from "./pages/Expenses"
 import Categories from "./pages/Categories"
 import Budget from "./pages/Budget"
-
+import Profile from "./pages/Profile"
 
 /*
 =========================================================
@@ -169,6 +169,15 @@ function App() {
                             : <Navigate to="/" replace />
                     }
                 />
+
+               <Route
+    path="/profile"
+    element={
+        <ProtectedRoute>
+            <Profile />
+        </ProtectedRoute>
+    }
+/>
 
             </Routes>
 

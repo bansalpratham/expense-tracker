@@ -731,18 +731,14 @@ function Home() {
 
                         {/* PROFILE */}
 
-                        <button
-                            className="top-avatar"
-                            onClick={() =>
-                                showNotice(
-                                    "Profile settings coming soon"
-                                )
-                            }
-                        >
-
-                            JD
-
-                        </button>
+                      <button
+    className="top-avatar"
+    onClick={() =>
+        navigateTo("/profile")
+    }
+>
+    JD
+</button>
 
                     </div>
 
