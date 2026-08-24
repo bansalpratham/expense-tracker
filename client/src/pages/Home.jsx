@@ -187,17 +187,6 @@ function Home() {
     ========================================
     USER
     ========================================
-
-    Get logged-in user from Redux.
-
-    Supports:
-
-    state.auth.user.name
-    state.auth.user.username
-    state.auth.user.email
-
-    depending on what your backend returns.
-    ========================================
     */
 
     const user = useSelector(
@@ -375,32 +364,6 @@ function Home() {
     ========================================
     SEARCH EXPENSES
     ========================================
-
-    Search by:
-
-    1. Description
-    2. Category name
-    3. Amount
-    4. Date
-
-    Search is:
-    - Case insensitive
-    - Space trimmed
-    - Handles ₹
-    - Handles commas
-    - Handles decimal amounts
-
-    Examples:
-
-    food
-    Food
-    FOOD
-    shopping
-    500
-    ₹500
-    1,000
-    2026-08-24
-    ========================================
     */
 
     const filteredExpenses = useMemo(() => {
@@ -409,29 +372,11 @@ function Home() {
             .trim()
             .toLowerCase()
 
-        /*
-        Empty search
-        */
-
         if (!query) {
 
             return expenses
 
         }
-
-
-        /*
-        Normalize search query.
-
-        This makes:
-
-        ₹500
-        500
-        ₹ 500
-        1,000
-
-        easier to match.
-        */
 
         const normalizedQuery = query
             .replace(/₹/g, "")
@@ -442,12 +387,6 @@ function Home() {
         return expenses.filter(
             (expense) => {
 
-                /*
-                ========================================
-                CATEGORY
-                ========================================
-                */
-
                 const category =
                     categories.find(
                         (item) =>
@@ -455,12 +394,6 @@ function Home() {
                             Number(expense.category_id)
                     )
 
-
-                /*
-                ========================================
-                DESCRIPTION
-                ========================================
-                */
 
                 const description =
                     String(
@@ -470,12 +403,6 @@ function Home() {
                         .toLowerCase()
 
 
-                /*
-                ========================================
-                CATEGORY NAME
-                ========================================
-                */
-
                 const categoryName =
                     String(
                         category?.name || ""
@@ -483,12 +410,6 @@ function Home() {
                         .trim()
                         .toLowerCase()
 
-
-                /*
-                ========================================
-                AMOUNT
-                ========================================
-                */
 
                 const rawAmount =
                     String(
@@ -505,12 +426,6 @@ function Home() {
                         .replace(/\s+/g, "")
 
 
-                /*
-                ========================================
-                DATE
-                ========================================
-                */
-
                 const rawDate =
                     String(
                         expense.date || ""
@@ -518,21 +433,6 @@ function Home() {
                         .trim()
                         .toLowerCase()
 
-
-                /*
-                Also create a readable date.
-
-                Example:
-
-                2026-08-24
-
-                can also match:
-
-                24 aug
-                24 august
-                aug 24
-                ========================================
-                */
 
                 let readableDate = ""
 
@@ -563,12 +463,6 @@ function Home() {
 
                 }
 
-
-                /*
-                ========================================
-                MATCH
-                ========================================
-                */
 
                 const matchesDescription =
                     description.includes(query)
@@ -2155,11 +2049,51 @@ function Home() {
             {notice && (
 
                 <div
-                    className="toast-notice"
                     role="status"
+                    aria-live="polite"
+                    style={{
+                        position: "fixed",
+                        right: "28px",
+                        bottom: "28px",
+                        zIndex: 9999,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "12px",
+                        minWidth: "280px",
+                        maxWidth: "380px",
+                        padding: "14px 18px",
+                        borderRadius: "14px",
+                        background: "#10231d",
+                        border: "1px solid #285343",
+                        color: "#e7f5ef",
+                        boxShadow: "0 14px 40px rgba(0, 0, 0, 0.35)",
+                        fontSize: "14px",
+                        fontWeight: "500",
+                        lineHeight: "1.4"
+                    }}
                 >
 
-                    {notice}
+                    <span
+                        style={{
+                            width: "28px",
+                            height: "28px",
+                            minWidth: "28px",
+                            borderRadius: "50%",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            background: "rgba(52, 211, 153, 0.14)",
+                            color: "#34d399",
+                            fontSize: "16px",
+                            fontWeight: "700"
+                        }}
+                    >
+                        ✓
+                    </span>
+
+                    <span>
+                        {notice}
+                    </span>
 
                 </div>
 
