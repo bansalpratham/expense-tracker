@@ -1,15 +1,13 @@
-import {
-    Router
-} from "express"
-
+import { Router } from "express"
 
 import {
     getUsers,
     getUserById,
     getCurrentUser,
-    updateCurrentUser
+    updateCurrentUser,
+    changePassword,
+    deleteCurrentUser
 } from "../controllers/userController.js"
-
 
 import authMiddleware from "../middleware/authMiddleware.js"
 
@@ -18,9 +16,9 @@ const router = Router()
 
 
 /*
-========================================
-CURRENT LOGGED-IN USER
-========================================
+==================================================
+CURRENT USER
+==================================================
 */
 
 router.get(
@@ -31,9 +29,9 @@ router.get(
 
 
 /*
-========================================
-UPDATE CURRENT LOGGED-IN USER
-========================================
+==================================================
+UPDATE PROFILE
+==================================================
 */
 
 router.put(
@@ -44,9 +42,35 @@ router.put(
 
 
 /*
-========================================
+==================================================
+CHANGE PASSWORD
+==================================================
+*/
+
+router.put(
+    "/users/me/password",
+    authMiddleware,
+    changePassword
+)
+
+
+/*
+==================================================
+DELETE ACCOUNT
+==================================================
+*/
+
+router.delete(
+    "/users/me",
+    authMiddleware,
+    deleteCurrentUser
+)
+
+
+/*
+==================================================
 GET ALL USERS
-========================================
+==================================================
 */
 
 router.get(
@@ -56,9 +80,9 @@ router.get(
 
 
 /*
-========================================
+==================================================
 GET USER BY ID
-========================================
+==================================================
 */
 
 router.get(

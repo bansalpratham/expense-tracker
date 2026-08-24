@@ -37,6 +37,9 @@ import {
 
 
 import {
+    changePassword,
+    clearPasswordState,
+    deleteAccount,
     getCurrentUser,
     logout,
     updateCurrentUser
@@ -80,10 +83,30 @@ function Profile() {
         (state) => state.auth.updateError
     )
 
+    const passwordLoading = useSelector(
+        (state) => state.auth.passwordLoading
+    )
+
+    const passwordError = useSelector(
+        (state) => state.auth.passwordError
+    )
+
+    const passwordSuccess = useSelector(
+        (state) => state.auth.passwordSuccess
+    )
+
+    const deleteLoading = useSelector(
+        (state) => state.auth.deleteLoading
+    )
+
+    const deleteError = useSelector(
+        (state) => state.auth.deleteError
+    )
+
 
     /*
     ========================================
-    EDIT PROFILE STATE
+    MODAL STATE
     ========================================
     */
 
@@ -94,6 +117,18 @@ function Profile() {
 
 
     const [
+        isPasswordOpen,
+        setIsPasswordOpen
+    ] = useState(false)
+
+
+    /*
+    ========================================
+    EDIT PROFILE STATE
+    ========================================
+    */
+
+    const [
         username,
         setUsername
     ] = useState("")
@@ -102,6 +137,36 @@ function Profile() {
     const [
         email,
         setEmail
+    ] = useState("")
+
+
+    /*
+    ========================================
+    PASSWORD STATE
+    ========================================
+    */
+
+    const [
+        currentPassword,
+        setCurrentPassword
+    ] = useState("")
+
+
+    const [
+        newPassword,
+        setNewPassword
+    ] = useState("")
+
+
+    const [
+        confirmPassword,
+        setConfirmPassword
+    ] = useState("")
+
+
+    const [
+        passwordFormError,
+        setPasswordFormError
     ] = useState("")
 
 
@@ -182,16 +247,12 @@ function Profile() {
 
 
         if (!username.trim()) {
-
             return
-
         }
 
 
         if (!email.trim()) {
-
             return
-
         }
 
 
@@ -218,6 +279,224 @@ function Profile() {
 
     /*
     ========================================
+    OPEN PASSWORD MODAL
+    ========================================
+    */
+
+    const handleOpenPassword = () => {
+
+        setCurrentPassword("")
+
+        setNewPassword("")
+
+        setConfirmPassword("")
+
+        setPasswordFormError("")
+
+        dispatch(
+            clearPasswordState()
+        )
+
+        setIsPasswordOpen(true)
+
+    }
+
+
+    /*
+    ========================================
+    CLOSE PASSWORD MODAL
+    ========================================
+    */
+
+    const handleClosePassword = () => {
+
+        if (passwordLoading) {
+            return
+        }
+
+        setIsPasswordOpen(false)
+
+        setCurrentPassword("")
+
+        setNewPassword("")
+
+        setConfirmPassword("")
+
+        setPasswordFormError("")
+
+        dispatch(
+            clearPasswordState()
+        )
+
+    }
+
+
+    /*
+    ========================================
+    SAVE PASSWORD
+    ========================================
+    */
+
+    const handleChangePassword = async (event) => {
+
+        event.preventDefault()
+
+        setPasswordFormError("")
+
+
+        if (!currentPassword) {
+
+            setPasswordFormError(
+                "Enter your current password"
+            )
+
+            return
+
+        }
+
+
+        if (!newPassword) {
+
+            setPasswordFormError(
+                "Enter your new password"
+            )
+
+            return
+
+        }
+
+
+        if (newPassword.length < 6) {
+
+            setPasswordFormError(
+                "New password must be at least 6 characters"
+            )
+
+            return
+
+        }
+
+
+        if (newPassword !== confirmPassword) {
+
+            setPasswordFormError(
+                "Passwords do not match"
+            )
+
+            return
+
+        }
+
+
+        if (currentPassword === newPassword) {
+
+            setPasswordFormError(
+                "New password must be different from current password"
+            )
+
+            return
+
+        }
+
+
+        const result = await dispatch(
+            changePassword({
+                currentPassword,
+                newPassword
+            })
+        )
+
+
+        if (
+            changePassword.fulfilled.match(
+                result
+            )
+        ) {
+
+            setCurrentPassword("")
+
+            setNewPassword("")
+
+            setConfirmPassword("")
+
+        }
+
+    }
+
+
+    /*
+    ========================================
+    DELETE ACCOUNT
+    ========================================
+    */
+
+    const handleDeleteAccount = async () => {
+
+        const confirmed = window.confirm(
+            "Are you sure you want to delete your account? This will permanently delete your account and all your ExpenseFlow data. This action cannot be undone."
+        )
+
+
+        if (!confirmed) {
+            return
+        }
+
+
+        const secondConfirmation =
+            window.confirm(
+                "Final confirmation: permanently delete your account?"
+            )
+
+
+        if (!secondConfirmation) {
+            return
+        }
+
+
+        const result = await dispatch(
+            deleteAccount()
+        )
+
+
+        if (
+            deleteAccount.fulfilled.match(
+                result
+            )
+        ) {
+
+            navigate("/login", {
+                replace: true
+            })
+
+        }
+
+    }
+
+
+    /*
+    ========================================
+    LOGOUT
+    ========================================
+    */
+
+    const handleLogout = () => {
+
+        dispatch(
+            logout()
+        )
+
+        navigate(
+            "/login",
+            {
+                replace: true
+            }
+        )
+
+    }
+
+
+    /*
+    ========================================
     MEMBER SINCE
     ========================================
     */
@@ -237,7 +516,7 @@ function Profile() {
 
     /*
     ========================================
-    USER INITIALS
+    INITIALS
     ========================================
     */
 
@@ -251,23 +530,6 @@ function Profile() {
             .slice(0, 2)
             .toUpperCase()
         : "U"
-
-
-    /*
-    ========================================
-    LOGOUT
-    ========================================
-    */
-
-    const handleLogout = () => {
-
-        dispatch(
-            logout()
-        )
-
-        navigate("/login")
-
-    }
 
 
     /*
@@ -319,8 +581,6 @@ function Profile() {
             <aside className="sidebar">
 
 
-                {/* BRAND */}
-
                 <div
                     className="brand"
                     onClick={() =>
@@ -349,8 +609,6 @@ function Profile() {
 
                 </div>
 
-
-                {/* NAVIGATION */}
 
                 <nav
                     className="nav-list"
@@ -426,8 +684,6 @@ function Profile() {
                 </nav>
 
 
-                {/* SIDEBAR BOTTOM */}
-
                 <div className="sidebar-bottom">
 
 
@@ -481,13 +737,11 @@ function Profile() {
 
 
             {/* ========================================
-                MAIN CONTENT
+                MAIN
             ======================================== */}
 
             <main className="main-content">
 
-
-                {/* TOP BAR */}
 
                 <header className="topbar">
 
@@ -506,12 +760,10 @@ function Profile() {
                 </header>
 
 
-                {/* CONTENT */}
-
                 <div className="content-wrap">
 
 
-                    {/* BACK BUTTON */}
+                    {/* BACK */}
 
                     <button
                         className="more-button"
@@ -534,7 +786,7 @@ function Profile() {
 
 
                     {/* ========================================
-                        PROFILE HERO
+                        HERO
                     ======================================== */}
 
                     <section className="profile-hero panel">
@@ -607,7 +859,7 @@ function Profile() {
                     <section className="profile-grid">
 
 
-                        {/* PERSONAL INFORMATION */}
+                        {/* PERSONAL */}
 
                         <div className="panel profile-card">
 
@@ -634,16 +886,11 @@ function Profile() {
                             <div className="profile-info-list">
 
 
-                                {/* USERNAME */}
-
                                 <div className="profile-info-item">
 
                                     <div className="profile-info-icon">
-
                                         <User />
-
                                     </div>
-
 
                                     <div>
 
@@ -652,10 +899,8 @@ function Profile() {
                                         </span>
 
                                         <strong>
-
                                             {user?.username ||
                                                 "Not available"}
-
                                         </strong>
 
                                     </div>
@@ -663,16 +908,11 @@ function Profile() {
                                 </div>
 
 
-                                {/* EMAIL */}
-
                                 <div className="profile-info-item">
 
                                     <div className="profile-info-icon">
-
                                         <Mail />
-
                                     </div>
-
 
                                     <div>
 
@@ -681,10 +921,8 @@ function Profile() {
                                         </span>
 
                                         <strong>
-
                                             {user?.email ||
                                                 "Not available"}
-
                                         </strong>
 
                                     </div>
@@ -692,16 +930,11 @@ function Profile() {
                                 </div>
 
 
-                                {/* USERNAME */}
-
                                 <div className="profile-info-item">
 
                                     <div className="profile-info-icon">
-
                                         <User />
-
                                     </div>
-
 
                                     <div>
 
@@ -710,11 +943,9 @@ function Profile() {
                                         </span>
 
                                         <strong>
-
                                             {user?.username
                                                 ? `@${user.username}`
                                                 : "Not available"}
-
                                         </strong>
 
                                     </div>
@@ -722,16 +953,11 @@ function Profile() {
                                 </div>
 
 
-                                {/* MEMBER SINCE */}
-
                                 <div className="profile-info-item">
 
                                     <div className="profile-info-icon">
-
                                         <CalendarDays />
-
                                     </div>
-
 
                                     <div>
 
@@ -740,10 +966,8 @@ function Profile() {
                                         </span>
 
                                         <strong>
-
                                             {joinedDate ||
                                                 "Not available"}
-
                                         </strong>
 
                                     </div>
@@ -756,7 +980,7 @@ function Profile() {
                         </div>
 
 
-                        {/* EXPENSE OVERVIEW */}
+                        {/* EXPENSE */}
 
                         <div className="panel profile-card">
 
@@ -808,9 +1032,7 @@ function Profile() {
                                     </span>
 
                                     <strong>
-
                                         {expenses.length}
-
                                     </strong>
 
                                 </div>
@@ -868,7 +1090,7 @@ function Profile() {
 
 
                     {/* ========================================
-                        ACCOUNT SETTINGS
+                        SETTINGS
                     ======================================== */}
 
                     <section className="panel profile-settings">
@@ -896,8 +1118,6 @@ function Profile() {
                         <div className="settings-list">
 
 
-                            {/* EDIT PROFILE */}
-
                             <button
                                 className="settings-row"
                                 onClick={
@@ -908,11 +1128,8 @@ function Profile() {
                                 <div className="settings-left">
 
                                     <span className="settings-icon">
-
                                         <Edit3 />
-
                                     </span>
-
 
                                     <div>
 
@@ -929,31 +1146,23 @@ function Profile() {
 
                                 </div>
 
-
                                 <ChevronRight />
 
                             </button>
 
 
-                            {/* CHANGE PASSWORD */}
-
                             <button
                                 className="settings-row"
-                                onClick={() =>
-                                    alert(
-                                        "Change password coming soon"
-                                    )
+                                onClick={
+                                    handleOpenPassword
                                 }
                             >
 
                                 <div className="settings-left">
 
                                     <span className="settings-icon">
-
                                         <KeyRound />
-
                                     </span>
-
 
                                     <div>
 
@@ -969,13 +1178,10 @@ function Profile() {
 
                                 </div>
 
-
                                 <ChevronRight />
 
                             </button>
 
-
-                            {/* NOTIFICATIONS */}
 
                             <button
                                 className="settings-row"
@@ -989,11 +1195,8 @@ function Profile() {
                                 <div className="settings-left">
 
                                     <span className="settings-icon">
-
                                         <Bell />
-
                                     </span>
-
 
                                     <div>
 
@@ -1009,7 +1212,6 @@ function Profile() {
                                     </div>
 
                                 </div>
-
 
                                 <ChevronRight />
 
@@ -1060,21 +1262,35 @@ function Profile() {
 
                             <button
                                 className="delete-account-button"
-                                onClick={() =>
-                                    alert(
-                                        "Delete account coming soon"
-                                    )
+                                onClick={
+                                    handleDeleteAccount
+                                }
+                                disabled={
+                                    deleteLoading
                                 }
                             >
 
                                 <Trash2 />
 
-                                Delete account
+                                {deleteLoading
+                                    ? "Deleting..."
+                                    : "Delete account"}
 
                             </button>
 
 
                         </div>
+
+
+                        {deleteError && (
+
+                            <p className="profile-form-error">
+
+                                {deleteError}
+
+                            </p>
+
+                        )}
 
                     </section>
 
@@ -1108,8 +1324,6 @@ function Profile() {
 
                     <div className="profile-modal">
 
-
-                        {/* MODAL HEADER */}
 
                         <div className="profile-modal-header">
 
@@ -1148,16 +1362,12 @@ function Profile() {
                         </div>
 
 
-                        {/* FORM */}
-
                         <form
                             onSubmit={
                                 handleSaveProfile
                             }
                         >
 
-
-                            {/* USERNAME */}
 
                             <div className="profile-form-group">
 
@@ -1191,8 +1401,6 @@ function Profile() {
                             </div>
 
 
-                            {/* EMAIL */}
-
                             <div className="profile-form-group">
 
                                 <label htmlFor="profile-email">
@@ -1225,25 +1433,16 @@ function Profile() {
                             </div>
 
 
-                            {/* ERROR */}
-
                             {updateError && (
 
                                 <div className="profile-form-error">
-
-                                    {typeof updateError === "string"
-                                        ? updateError
-                                        : "Failed to update profile"}
-
+                                    {updateError}
                                 </div>
 
                             )}
 
 
-                            {/* BUTTONS */}
-
                             <div className="profile-modal-actions">
-
 
                                 <button
                                     type="button"
@@ -1255,9 +1454,7 @@ function Profile() {
                                         updateLoading
                                     }
                                 >
-
                                     Cancel
-
                                 </button>
 
 
@@ -1274,6 +1471,250 @@ function Profile() {
                                     {updateLoading
                                         ? "Saving..."
                                         : "Save changes"}
+
+                                </button>
+
+                            </div>
+
+
+                        </form>
+
+                    </div>
+
+                </div>
+
+            )}
+
+
+            {/* ========================================
+                CHANGE PASSWORD MODAL
+            ======================================== */}
+
+            {isPasswordOpen && (
+
+                <div
+                    className="profile-modal-overlay"
+                    onMouseDown={(event) => {
+
+                        if (
+                            event.target ===
+                            event.currentTarget
+                        ) {
+
+                            handleClosePassword()
+
+                        }
+
+                    }}
+                >
+
+                    <div className="profile-modal">
+
+
+                        <div className="profile-modal-header">
+
+                            <div>
+
+                                <p className="section-kicker">
+                                    Security
+                                </p>
+
+                                <h2>
+                                    Change password
+                                </h2>
+
+                                <p className="muted-copy">
+                                    Choose a new password for your account
+                                </p>
+
+                            </div>
+
+
+                            <button
+                                type="button"
+                                className="profile-modal-close"
+                                onClick={
+                                    handleClosePassword
+                                }
+                                disabled={
+                                    passwordLoading
+                                }
+                            >
+
+                                <X />
+
+                            </button>
+
+                        </div>
+
+
+                        <form
+                            onSubmit={
+                                handleChangePassword
+                            }
+                        >
+
+
+                            {/* CURRENT PASSWORD */}
+
+                            <div className="profile-form-group">
+
+                                <label htmlFor="current-password">
+                                    Current password
+                                </label>
+
+
+                                <div className="profile-input-wrapper">
+
+                                    <KeyRound />
+
+                                    <input
+                                        id="current-password"
+                                        type="password"
+                                        value={currentPassword}
+                                        onChange={(event) =>
+                                            setCurrentPassword(
+                                                event.target.value
+                                            )
+                                        }
+                                        placeholder="Enter current password"
+                                        disabled={
+                                            passwordLoading
+                                        }
+                                        autoComplete="current-password"
+                                    />
+
+                                </div>
+
+                            </div>
+
+
+                            {/* NEW PASSWORD */}
+
+                            <div className="profile-form-group">
+
+                                <label htmlFor="new-password">
+                                    New password
+                                </label>
+
+
+                                <div className="profile-input-wrapper">
+
+                                    <KeyRound />
+
+                                    <input
+                                        id="new-password"
+                                        type="password"
+                                        value={newPassword}
+                                        onChange={(event) =>
+                                            setNewPassword(
+                                                event.target.value
+                                            )
+                                        }
+                                        placeholder="Minimum 6 characters"
+                                        disabled={
+                                            passwordLoading
+                                        }
+                                        autoComplete="new-password"
+                                    />
+
+                                </div>
+
+                            </div>
+
+
+                            {/* CONFIRM PASSWORD */}
+
+                            <div className="profile-form-group">
+
+                                <label htmlFor="confirm-password">
+                                    Confirm new password
+                                </label>
+
+
+                                <div className="profile-input-wrapper">
+
+                                    <KeyRound />
+
+                                    <input
+                                        id="confirm-password"
+                                        type="password"
+                                        value={confirmPassword}
+                                        onChange={(event) =>
+                                            setConfirmPassword(
+                                                event.target.value
+                                            )
+                                        }
+                                        placeholder="Confirm new password"
+                                        disabled={
+                                            passwordLoading
+                                        }
+                                        autoComplete="new-password"
+                                    />
+
+                                </div>
+
+                            </div>
+
+
+                            {/* ERROR */}
+
+                            {(passwordFormError ||
+                                passwordError) && (
+
+                                <div className="profile-form-error">
+
+                                    {passwordFormError ||
+                                        passwordError}
+
+                                </div>
+
+                            )}
+
+
+                            {/* SUCCESS */}
+
+                            {passwordSuccess && (
+
+                                <div className="profile-form-success">
+
+                                    Password changed successfully.
+
+                                </div>
+
+                            )}
+
+
+                            <div className="profile-modal-actions">
+
+
+                                <button
+                                    type="button"
+                                    className="more-button"
+                                    onClick={
+                                        handleClosePassword
+                                    }
+                                    disabled={
+                                        passwordLoading
+                                    }
+                                >
+
+                                    Cancel
+
+                                </button>
+
+
+                                <button
+                                    type="submit"
+                                    className="primary-button"
+                                    disabled={
+                                        passwordLoading
+                                    }
+                                >
+
+                                    {passwordLoading
+                                        ? "Changing..."
+                                        : "Change password"}
 
                                 </button>
 
@@ -1297,9 +1738,9 @@ function Profile() {
 
 
 /*
-========================================
-TRENDING UP ICON
-========================================
+==================================================
+TRENDING ICON
+==================================================
 */
 
 function TrendingUpIcon() {

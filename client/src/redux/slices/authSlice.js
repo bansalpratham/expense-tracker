@@ -16,15 +16,25 @@ const initialState = {
 
     updateLoading: false,
 
-    updateError: null
+    updateError: null,
+
+    passwordLoading: false,
+
+    passwordError: null,
+
+    passwordSuccess: false,
+
+    deleteLoading: false,
+
+    deleteError: null
 
 }
 
 
 /*
-========================================
+==================================================
 GET CURRENT USER
-========================================
+==================================================
 */
 
 export const getCurrentUser = createAsyncThunk(
@@ -57,9 +67,9 @@ export const getCurrentUser = createAsyncThunk(
 
 
 /*
-========================================
+==================================================
 UPDATE CURRENT USER
-========================================
+==================================================
 */
 
 export const updateCurrentUser = createAsyncThunk(
@@ -67,7 +77,7 @@ export const updateCurrentUser = createAsyncThunk(
     "auth/updateCurrentUser",
 
     async (
-        userData,
+        { username, email },
         { rejectWithValue }
     ) => {
 
@@ -75,7 +85,10 @@ export const updateCurrentUser = createAsyncThunk(
 
             const response = await api.put(
                 "/users/me",
-                userData
+                {
+                    username,
+                    email
+                }
             )
 
             return response.data
@@ -96,9 +109,89 @@ export const updateCurrentUser = createAsyncThunk(
 
 
 /*
-========================================
-AUTH SLICE
-========================================
+==================================================
+CHANGE PASSWORD
+==================================================
+*/
+
+export const changePassword = createAsyncThunk(
+
+    "auth/changePassword",
+
+    async (
+        {
+            currentPassword,
+            newPassword
+        },
+        { rejectWithValue }
+    ) => {
+
+        try {
+
+            const response = await api.put(
+                "/users/me/password",
+                {
+                    currentPassword,
+                    newPassword
+                }
+            )
+
+            return response.data
+
+        } catch (error) {
+
+            return rejectWithValue(
+                error.response?.data?.error ||
+                error.response?.data ||
+                "Failed to change password"
+            )
+
+        }
+
+    }
+
+)
+
+
+/*
+==================================================
+DELETE ACCOUNT
+==================================================
+*/
+
+export const deleteAccount = createAsyncThunk(
+
+    "auth/deleteAccount",
+
+    async (_, { rejectWithValue }) => {
+
+        try {
+
+            const response = await api.delete(
+                "/users/me"
+            )
+
+            return response.data
+
+        } catch (error) {
+
+            return rejectWithValue(
+                error.response?.data?.error ||
+                error.response?.data ||
+                "Failed to delete account"
+            )
+
+        }
+
+    }
+
+)
+
+
+/*
+==================================================
+SLICE
+==================================================
 */
 
 const authSlice = createSlice({
@@ -113,19 +206,30 @@ const authSlice = createSlice({
 
             state.user = null
 
-            state.loading = false
-
             state.error = null
-
-            state.updateLoading = false
 
             state.updateError = null
 
+            state.passwordError = null
+
+            state.deleteError = null
+
+            state.passwordSuccess = false
+
             localStorage.removeItem("token")
+
+        },
+
+        clearPasswordState: (state) => {
+
+            state.passwordError = null
+
+            state.passwordSuccess = false
 
         }
 
     },
+
 
     extraReducers: (builder) => {
 
@@ -133,9 +237,9 @@ const authSlice = createSlice({
 
 
             /*
-            ================================
+            ======================================
             GET CURRENT USER
-            ================================
+            ======================================
             */
 
             .addCase(
@@ -158,8 +262,6 @@ const authSlice = createSlice({
 
                     state.user = action.payload
 
-                    state.error = null
-
                 }
             )
 
@@ -170,8 +272,6 @@ const authSlice = createSlice({
 
                     state.loading = false
 
-                    state.user = null
-
                     state.error = action.payload
 
                 }
@@ -179,9 +279,9 @@ const authSlice = createSlice({
 
 
             /*
-            ================================
-            UPDATE PROFILE - PENDING
-            ================================
+            ======================================
+            UPDATE PROFILE
+            ======================================
             */
 
             .addCase(
@@ -195,12 +295,6 @@ const authSlice = createSlice({
                 }
             )
 
-
-            /*
-            ================================
-            UPDATE PROFILE - SUCCESS
-            ================================
-            */
 
             .addCase(
                 updateCurrentUser.fulfilled,
@@ -216,12 +310,6 @@ const authSlice = createSlice({
             )
 
 
-            /*
-            ================================
-            UPDATE PROFILE - ERROR
-            ================================
-            */
-
             .addCase(
                 updateCurrentUser.rejected,
                 (state, action) => {
@@ -233,13 +321,108 @@ const authSlice = createSlice({
                 }
             )
 
+
+            /*
+            ======================================
+            CHANGE PASSWORD
+            ======================================
+            */
+
+            .addCase(
+                changePassword.pending,
+                (state) => {
+
+                    state.passwordLoading = true
+
+                    state.passwordError = null
+
+                    state.passwordSuccess = false
+
+                }
+            )
+
+
+            .addCase(
+                changePassword.fulfilled,
+                (state) => {
+
+                    state.passwordLoading = false
+
+                    state.passwordError = null
+
+                    state.passwordSuccess = true
+
+                }
+            )
+
+
+            .addCase(
+                changePassword.rejected,
+                (state, action) => {
+
+                    state.passwordLoading = false
+
+                    state.passwordError = action.payload
+
+                    state.passwordSuccess = false
+
+                }
+            )
+
+
+            /*
+            ======================================
+            DELETE ACCOUNT
+            ======================================
+            */
+
+            .addCase(
+                deleteAccount.pending,
+                (state) => {
+
+                    state.deleteLoading = true
+
+                    state.deleteError = null
+
+                }
+            )
+
+
+            .addCase(
+                deleteAccount.fulfilled,
+                (state) => {
+
+                    state.deleteLoading = false
+
+                    state.user = null
+
+                    state.deleteError = null
+
+                    localStorage.removeItem("token")
+
+                }
+            )
+
+
+            .addCase(
+                deleteAccount.rejected,
+                (state, action) => {
+
+                    state.deleteLoading = false
+
+                    state.deleteError = action.payload
+
+                }
+            )
+
     }
 
 })
 
 
 export const {
-    logout
+    logout,
+    clearPasswordState
 } = authSlice.actions
 
 
