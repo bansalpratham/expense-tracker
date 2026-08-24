@@ -200,6 +200,12 @@ function Home() {
     const [notificationOpen, setNotificationOpen] =
         useState(false)
 
+    /*
+    SEARCH STATE
+    */
+
+    const [searchTerm, setSearchTerm] = useState("")
+
 
     /*
     ========================================
@@ -262,6 +268,118 @@ function Home() {
 
     /*
     ========================================
+    SEARCH EXPENSES
+    ========================================
+    
+    Search by:
+    
+    1. Description
+    2. Category name
+    3. Amount
+    
+    Example:
+    
+    "food"
+    "salary"
+    "shopping"
+    "500"
+    
+    ========================================
+    */
+
+    const filteredExpenses = useMemo(() => {
+
+        const query = searchTerm
+            .trim()
+            .toLowerCase()
+
+        /*
+        If search box is empty,
+        show all expenses.
+        */
+
+        if (!query) {
+
+            return expenses
+
+        }
+
+
+        return expenses.filter(
+            (expense) => {
+
+                /*
+                Find category of expense
+                */
+
+                const category =
+                    categories.find(
+                        (item) =>
+                            Number(item.id) ===
+                            Number(expense.category_id)
+                    )
+
+
+                const description =
+                    String(
+                        expense.description || ""
+                    ).toLowerCase()
+
+
+                const categoryName =
+                    String(
+                        category?.name || ""
+                    ).toLowerCase()
+
+
+                const amount =
+                    String(
+                        expense.amount || ""
+                    ).toLowerCase()
+
+
+                const date =
+                    String(
+                        expense.date || ""
+                    ).toLowerCase()
+
+
+                /*
+                Match against any field
+                */
+
+                return (
+                    description.includes(query) ||
+                    categoryName.includes(query) ||
+                    amount.includes(query) ||
+                    date.includes(query)
+                )
+
+            }
+        )
+
+    }, [
+        expenses,
+        categories,
+        searchTerm
+    ])
+
+
+    /*
+    ========================================
+    SEARCH CLEAR
+    ========================================
+    */
+
+    const clearSearch = () => {
+
+        setSearchTerm("")
+
+    }
+
+
+    /*
+    ========================================
     ADD EXPENSE
     ========================================
     */
@@ -277,36 +395,20 @@ function Home() {
             ).unwrap()
 
 
-            /*
-            Refresh dashboard
-            */
-
             await dispatch(
                 getDashboard()
             ).unwrap()
 
-
-            /*
-            Refresh category spending
-            */
 
             await dispatch(
                 getCategorySpending()
             ).unwrap()
 
 
-            /*
-            Refresh expenses
-            */
-
             await dispatch(
                 getExpenses()
             ).unwrap()
 
-
-            /*
-            Refresh notifications
-            */
 
             await dispatch(
                 getNotifications()
@@ -314,7 +416,6 @@ function Home() {
 
 
             setFormOpen(false)
-
 
             showNotice(
                 "Expense added successfully"
@@ -354,36 +455,20 @@ function Home() {
             ).unwrap()
 
 
-            /*
-            Refresh dashboard
-            */
-
             await dispatch(
                 getDashboard()
             ).unwrap()
 
-
-            /*
-            Refresh category spending
-            */
 
             await dispatch(
                 getCategorySpending()
             ).unwrap()
 
 
-            /*
-            Refresh expenses
-            */
-
             await dispatch(
                 getExpenses()
             ).unwrap()
 
-
-            /*
-            Refresh notifications
-            */
 
             await dispatch(
                 getNotifications()
@@ -421,10 +506,6 @@ function Home() {
 
         try {
 
-            /*
-            Only mark unread notifications
-            */
-
             if (!notification.is_read) {
 
                 await dispatch(
@@ -435,13 +516,7 @@ function Home() {
 
             }
 
-
-            /*
-            Close notification dropdown
-            */
-
             setNotificationOpen(false)
-
 
         } catch (error) {
 
@@ -531,18 +606,25 @@ function Home() {
     /*
     ========================================
     TOTAL SHOWN
+
+    IMPORTANT:
+    Now uses filteredExpenses
+    instead of expenses.
+
+    So when user searches,
+    total shown changes too.
     ========================================
     */
 
     const totalVisible = useMemo(() => {
 
-        return expenses.reduce(
+        return filteredExpenses.reduce(
             (sum, expense) =>
                 sum + Number(expense.amount),
             0
         )
 
-    }, [expenses])
+    }, [filteredExpenses])
 
 
     /*
@@ -619,9 +701,6 @@ function Home() {
                 }`}
             >
 
-
-                {/* BRAND */}
-
                 <div
                     className="brand"
                     onClick={() =>
@@ -668,8 +747,6 @@ function Home() {
 
                 </div>
 
-
-                {/* NAVIGATION */}
 
                 <nav
                     className="nav-list"
@@ -718,12 +795,7 @@ function Home() {
                 </nav>
 
 
-                {/* SIDEBAR BOTTOM */}
-
                 <div className="sidebar-bottom">
-
-
-                    {/* SETTINGS */}
 
                     <button
                         className="nav-item"
@@ -740,8 +812,6 @@ function Home() {
 
                     </button>
 
-
-                    {/* PROFILE */}
 
                     <div className="profile">
 
@@ -774,8 +844,6 @@ function Home() {
             </aside>
 
 
-            {/* MOBILE SCRIM */}
-
             {menuOpen && (
 
                 <button
@@ -803,8 +871,6 @@ function Home() {
                 <header className="topbar">
 
 
-                    {/* MOBILE MENU */}
-
                     <button
                         className="mobile-menu"
                         aria-label="Open menu"
@@ -817,8 +883,6 @@ function Home() {
 
                     </button>
 
-
-                    {/* PAGE TITLE */}
 
                     <div>
 
@@ -833,26 +897,47 @@ function Home() {
                     </div>
 
 
-                    {/* TOP ACTIONS */}
-
                     <div className="topbar-actions">
 
 
-                        {/* SEARCH */}
+                        {/* ========================================
+                            SEARCH
+                        ======================================== */}
 
-                        <button
-                            className="icon-button"
-                            aria-label="Search"
-                            onClick={() =>
-                                showNotice(
-                                    "Search feature coming soon"
-                                )
-                            }
-                        >
+                        <div className="dashboard-search">
 
                             <Search />
 
-                        </button>
+                            <input
+                                type="text"
+                                placeholder="Search expenses..."
+                                value={searchTerm}
+                                onChange={(event) =>
+                                    setSearchTerm(
+                                        event.target.value
+                                    )
+                                }
+                            />
+
+
+                            {searchTerm && (
+
+                                <button
+                                    type="button"
+                                    className="dashboard-search-clear"
+                                    onClick={
+                                        clearSearch
+                                    }
+                                    aria-label="Clear search"
+                                >
+
+                                    <X />
+
+                                </button>
+
+                            )}
+
+                        </div>
 
 
                         {/* ========================================
@@ -893,9 +978,6 @@ function Home() {
 
                                 <div className="notification-dropdown">
 
-
-                                    {/* HEADER */}
-
                                     <div className="notification-header">
 
                                         <div>
@@ -927,8 +1009,6 @@ function Home() {
 
                                     </div>
 
-
-                                    {/* BODY */}
 
                                     <div className="notification-list">
 
@@ -1051,9 +1131,7 @@ function Home() {
                 <div className="content-wrap">
 
 
-                    {/* ========================================
-                        ADD EXPENSE FORM
-                    ======================================== */}
+                    {/* ADD EXPENSE */}
 
                     {formOpen && (
 
@@ -1070,10 +1148,6 @@ function Home() {
 
                     )}
 
-
-                    {/* ========================================
-                        WELCOME
-                    ======================================== */}
 
                     {!formOpen && (
 
@@ -1112,13 +1186,49 @@ function Home() {
 
 
                     {/* ========================================
+                        SEARCH RESULT INFO
+                    ======================================== */}
+
+                    {searchTerm.trim() && (
+
+                        <div className="search-result-info">
+
+                            <div>
+
+                                <Search />
+
+                                <span>
+
+                                    Showing results for{" "}
+
+                                    <strong>
+                                        "{searchTerm}"
+                                    </strong>
+
+                                </span>
+
+                            </div>
+
+
+                            <span>
+
+                                {filteredExpenses.length}{" "}
+                                {filteredExpenses.length === 1
+                                    ? "expense"
+                                    : "expenses"}
+
+                            </span>
+
+                        </div>
+
+                    )}
+
+
+                    {/* ========================================
                         METRICS
                     ======================================== */}
 
                     <section className="metrics-grid">
-
-
-                        {/* TOTAL SPENDING */}
 
                         <MetricCard
                             label="Total spending"
@@ -1129,8 +1239,6 @@ function Home() {
                         />
 
 
-                        {/* MONTHLY */}
-
                         <MetricCard
                             label="This month"
                             value={`₹${Number(
@@ -1140,8 +1248,6 @@ function Home() {
                         />
 
 
-                        {/* WEEKLY */}
-
                         <MetricCard
                             label="This week"
                             value={`₹${Number(
@@ -1150,8 +1256,6 @@ function Home() {
                             icon={CalendarDays}
                         />
 
-
-                        {/* BUDGET */}
 
                         <MetricCard
                             label="Budget left"
@@ -1190,9 +1294,6 @@ function Home() {
 
                         <div className="quick-actions">
 
-
-                            {/* ADD EXPENSE */}
-
                             <button
                                 onClick={() =>
                                     setFormOpen(true)
@@ -1205,8 +1306,6 @@ function Home() {
 
                             </button>
 
-
-                            {/* MANAGE CATEGORIES */}
 
                             <button
                                 onClick={() =>
@@ -1222,8 +1321,6 @@ function Home() {
 
                             </button>
 
-
-                            {/* SET BUDGET */}
 
                             <button
                                 onClick={() =>
@@ -1251,9 +1348,7 @@ function Home() {
                     <section className="charts-grid">
 
 
-                        {/* ========================================
-                            SPENDING OVERVIEW
-                        ======================================== */}
+                        {/* SPENDING OVERVIEW */}
 
                         <div className="panel trend-panel">
 
@@ -1378,9 +1473,7 @@ function Home() {
                         </div>
 
 
-                        {/* ========================================
-                            CATEGORY CHART
-                        ======================================== */}
+                        {/* CATEGORY CHART */}
 
                         <div className="panel category-panel">
 
@@ -1555,19 +1648,27 @@ function Home() {
                             <div>
 
                                 <p className="section-title">
-                                    Recent expenses
+
+                                    {searchTerm.trim()
+                                        ? "Search results"
+                                        : "Recent expenses"}
+
                                 </p>
 
                                 <p className="muted-copy">
-                                    {expenses.length}
+
+                                    {filteredExpenses.length}
                                     {" "}
-                                    transactions
+                                    {filteredExpenses.length === 1
+                                        ? "transaction"
+                                        : "transactions"}
+
                                 </p>
 
                             </div>
 
 
-                            {expenses.length > 0 && (
+                            {filteredExpenses.length > 0 && (
 
                                 <button
                                     className="more-button"
@@ -1621,7 +1722,7 @@ function Home() {
 
                                 <tbody>
 
-                                    {expenses.length === 0 ? (
+                                    {filteredExpenses.length === 0 ? (
 
                                         <tr>
 
@@ -1636,8 +1737,27 @@ function Home() {
                                             >
 
                                                 <p className="muted-copy">
-                                                    No expenses yet.
+
+                                                    {searchTerm.trim()
+                                                        ? "No expenses found."
+                                                        : "No expenses yet."}
+
                                                 </p>
+
+                                                {searchTerm.trim() && (
+
+                                                    <button
+                                                        className="clear-search-button"
+                                                        onClick={
+                                                            clearSearch
+                                                        }
+                                                    >
+
+                                                        Clear search
+
+                                                    </button>
+
+                                                )}
 
                                             </td>
 
@@ -1645,7 +1765,7 @@ function Home() {
 
                                     ) : (
 
-                                        expenses.map(
+                                        filteredExpenses.map(
                                             (
                                                 expense
                                             ) => {
@@ -1672,9 +1792,6 @@ function Home() {
                                                         }
                                                     >
 
-
-                                                        {/* DESCRIPTION */}
-
                                                         <td>
 
                                                             <div className="merchant">
@@ -1699,8 +1816,6 @@ function Home() {
                                                         </td>
 
 
-                                                        {/* CATEGORY */}
-
                                                         <td>
 
                                                             <span className="category-pill">
@@ -1714,8 +1829,6 @@ function Home() {
                                                         </td>
 
 
-                                                        {/* DATE */}
-
                                                         <td className="date-cell">
 
                                                             {
@@ -1724,8 +1837,6 @@ function Home() {
 
                                                         </td>
 
-
-                                                        {/* AMOUNT */}
 
                                                         <td className="amount-cell">
 
@@ -1738,8 +1849,6 @@ function Home() {
 
                                                         </td>
 
-
-                                                        {/* DELETE */}
 
                                                         <td>
 
@@ -1775,8 +1884,6 @@ function Home() {
                         </div>
 
 
-                        {/* TABLE FOOTER */}
-
                         <div className="table-footer">
 
                             <span>
@@ -1789,9 +1896,11 @@ function Home() {
 
                             <span>
 
-                                {expenses.length}
+                                {filteredExpenses.length}
                                 {" "}
-                                expenses
+                                {filteredExpenses.length === 1
+                                    ? "expense"
+                                    : "expenses"}
 
                             </span>
 
