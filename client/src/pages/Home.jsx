@@ -71,6 +71,10 @@ import {
     markAllNotificationsAsRead
 } from "../redux/slices/notificationSlice"
 
+import {
+    getCurrentUser
+} from "../redux/slices/authSlice"
+
 
 /*
 ========================================
@@ -309,19 +313,21 @@ function Home() {
 
     useEffect(() => {
 
-        dispatch(getDashboard())
+    dispatch(getCurrentUser())
 
-        dispatch(getExpenses())
+    dispatch(getDashboard())
 
-        dispatch(getCategories())
+    dispatch(getExpenses())
 
-        dispatch(getCategorySpending())
+    dispatch(getCategories())
 
-        dispatch(getBudget())
+    dispatch(getCategorySpending())
 
-        dispatch(getNotifications())
+    dispatch(getBudget())
 
-    }, [dispatch])
+    dispatch(getNotifications())
+
+}, [dispatch])
 
 
     /*
