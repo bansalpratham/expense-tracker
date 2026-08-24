@@ -2161,6 +2161,319 @@ td {
 
 }
 
+/* ========================================
+   NOTIFICATIONS
+======================================== */
+
+.notification-wrapper {
+    position: relative;
+}
+
+
+.notification-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+
+    min-width: 18px;
+    height: 18px;
+
+    padding: 0 5px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 999px;
+
+    background: #34d399;
+    color: #07130f;
+
+    font-size: 10px;
+    font-weight: 800;
+
+    border: 2px solid #0d1713;
+}
+
+
+.notification-dropdown {
+    position: absolute;
+
+    top: calc(100% + 12px);
+    right: 0;
+
+    width: 360px;
+    max-width: calc(100vw - 30px);
+
+    background: #101b17;
+
+    border: 1px solid #244b3d;
+
+    border-radius: 16px;
+
+    box-shadow:
+        0 20px 50px rgba(0, 0, 0, 0.35);
+
+    overflow: hidden;
+
+    z-index: 100;
+}
+
+
+.notification-header {
+    padding: 16px;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    border-bottom: 1px solid #20372e;
+}
+
+
+.notification-header > div {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+
+.notification-header strong {
+    color: #e7f5ef;
+    font-size: 15px;
+}
+
+
+.notification-header span {
+    color: #718096;
+    font-size: 12px;
+}
+
+
+.notification-header button {
+    border: none;
+    background: transparent;
+
+    color: #34d399;
+
+    font-size: 12px;
+    font-weight: 700;
+
+    cursor: pointer;
+}
+
+
+.notification-list {
+    max-height: 380px;
+    overflow-y: auto;
+}
+
+
+.notification-item {
+    width: 100%;
+
+    display: flex;
+    align-items: flex-start;
+
+    gap: 12px;
+
+    padding: 14px 16px;
+
+    border: none;
+
+    background: transparent;
+
+    text-align: left;
+
+    cursor: pointer;
+
+    border-bottom: 1px solid #1c2e27;
+
+    transition: background 0.2s ease;
+}
+
+
+.notification-item:hover {
+    background: #17251f;
+}
+
+
+.notification-item.unread {
+    background: rgba(52, 211, 153, 0.06);
+}
+
+
+.notification-dot {
+    width: 7px;
+    height: 7px;
+
+    margin-top: 6px;
+
+    flex-shrink: 0;
+
+    border-radius: 50%;
+
+    background: transparent;
+}
+
+
+.notification-item.unread .notification-dot {
+    background: #34d399;
+}
+
+
+.notification-content {
+    min-width: 0;
+
+    display: flex;
+    flex-direction: column;
+
+    gap: 4px;
+}
+
+
+.notification-content strong {
+    color: #e7f5ef;
+
+    font-size: 13px;
+}
+
+
+.notification-content p {
+    margin: 0;
+
+    color: #a0aec0;
+
+    font-size: 12px;
+
+    line-height: 1.5;
+}
+
+
+.notification-content span {
+    color: #718096;
+
+    font-size: 10px;
+}
+
+
+.notification-empty {
+    padding: 30px 20px;
+
+    margin: 0;
+
+    text-align: center;
+
+    color: #718096;
+
+    font-size: 13px;
+}
+
+
+@media (max-width: 600px) {
+
+    .notification-dropdown {
+        position: fixed;
+
+        top: 70px;
+        right: 15px;
+        left: 15px;
+
+        width: auto;
+        max-width: none;
+    }
+
+}
+
+/* ========================================
+   NOTIFICATION SETTINGS
+======================================== */
+
+.notification-settings {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 24px;
+}
+
+
+.notification-setting-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 18px 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+
+.notification-setting-row:last-child {
+    border-bottom: none;
+}
+
+
+.notification-setting-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-width: 0;
+}
+
+
+.notification-setting-left > div:last-child {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+
+.notification-setting-left strong {
+    font-size: 14px;
+}
+
+
+.notification-setting-left span {
+    font-size: 12px;
+    color: var(--muted-text);
+    line-height: 1.5;
+}
+
+
+.notification-toggle {
+    position: relative;
+    width: 46px;
+    height: 26px;
+    flex-shrink: 0;
+    border: none;
+    border-radius: 999px;
+    background: #d1d5db;
+    cursor: pointer;
+    padding: 0;
+    transition: 0.2s ease;
+}
+
+
+.notification-toggle span {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    top: 3px;
+    left: 3px;
+    border-radius: 50%;
+    background: white;
+    transition: 0.2s ease;
+}
+
+
+.notification-toggle.active {
+    background: #111827;
+}
+
+
+.notification-toggle.active span {
+    transform: translateX(20px);
+}
+
 
 /* ========================================= */
 /* MOBILE */

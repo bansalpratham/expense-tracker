@@ -65,6 +65,12 @@ import {
     getBudget
 } from "../redux/slices/budgetSlice"
 
+import {
+    getNotifications,
+    markNotificationAsRead,
+    markAllNotificationsAsRead
+} from "../redux/slices/notificationSlice"
+
 
 /*
 ========================================
@@ -168,6 +174,14 @@ function Home() {
         (state) => state.category.categorySpending
     )
 
+    const notifications = useSelector(
+        (state) => state.notification.notifications
+    )
+
+    const notificationLoading = useSelector(
+        (state) => state.notification.loading
+    )
+
 
     /*
     ========================================
@@ -182,6 +196,9 @@ function Home() {
     const [formOpen, setFormOpen] = useState(false)
 
     const [loading, setLoading] = useState(false)
+
+    const [notificationOpen, setNotificationOpen] =
+        useState(false)
 
 
     /*
@@ -201,6 +218,8 @@ function Home() {
         dispatch(getCategorySpending())
 
         dispatch(getBudget())
+
+        dispatch(getNotifications())
 
     }, [dispatch])
 
@@ -235,6 +254,8 @@ function Home() {
         navigate(path)
 
         setMenuOpen(false)
+
+        setNotificationOpen(false)
 
     }
 
@@ -280,6 +301,15 @@ function Home() {
 
             await dispatch(
                 getExpenses()
+            ).unwrap()
+
+
+            /*
+            Refresh notifications
+            */
+
+            await dispatch(
+                getNotifications()
             ).unwrap()
 
 
@@ -342,6 +372,24 @@ function Home() {
             ).unwrap()
 
 
+            /*
+            Refresh expenses
+            */
+
+            await dispatch(
+                getExpenses()
+            ).unwrap()
+
+
+            /*
+            Refresh notifications
+            */
+
+            await dispatch(
+                getNotifications()
+            ).unwrap()
+
+
             showNotice(
                 "Expense deleted successfully"
             )
@@ -354,6 +402,87 @@ function Home() {
                 typeof error === "string"
                     ? error
                     : "Failed to delete expense"
+            )
+
+        }
+
+    }
+
+
+    /*
+    ========================================
+    MARK ONE NOTIFICATION AS READ
+    ========================================
+    */
+
+    const handleNotificationClick = async (
+        notification
+    ) => {
+
+        try {
+
+            /*
+            Only mark unread notifications
+            */
+
+            if (!notification.is_read) {
+
+                await dispatch(
+                    markNotificationAsRead(
+                        notification.id
+                    )
+                ).unwrap()
+
+            }
+
+
+            /*
+            Close notification dropdown
+            */
+
+            setNotificationOpen(false)
+
+
+        } catch (error) {
+
+            console.error(
+                "Failed to mark notification as read:",
+                error
+            )
+
+        }
+
+    }
+
+
+    /*
+    ========================================
+    MARK ALL NOTIFICATIONS AS READ
+    ========================================
+    */
+
+    const handleMarkAllNotificationsRead = async () => {
+
+        try {
+
+            await dispatch(
+                markAllNotificationsAsRead()
+            ).unwrap()
+
+
+            showNotice(
+                "All notifications marked as read"
+            )
+
+        } catch (error) {
+
+            console.error(
+                "Failed to mark notifications as read:",
+                error
+            )
+
+            showNotice(
+                "Failed to mark notifications as read"
             )
 
         }
@@ -414,6 +543,22 @@ function Home() {
         )
 
     }, [expenses])
+
+
+    /*
+    ========================================
+    UNREAD NOTIFICATIONS
+    ========================================
+    */
+
+    const unreadNotifications = useMemo(() => {
+
+        return notifications.filter(
+            (notification) =>
+                !notification.is_read
+        ).length
+
+    }, [notifications])
 
 
     /*
@@ -710,35 +855,189 @@ function Home() {
                         </button>
 
 
-                        {/* NOTIFICATIONS */}
+                        {/* ========================================
+                            NOTIFICATIONS
+                        ======================================== */}
 
-                        <button
-                            className="icon-button notification"
-                            aria-label="Notifications"
-                            onClick={() =>
-                                showNotice(
-                                    "You are all caught up"
-                                )
-                            }
-                        >
+                        <div className="notification-wrapper">
 
-                            <Bell />
+                            <button
+                                className="icon-button notification"
+                                aria-label="Notifications"
+                                onClick={() =>
+                                    setNotificationOpen(
+                                        (previous) =>
+                                            !previous
+                                    )
+                                }
+                            >
 
-                            <i />
+                                <Bell />
 
-                        </button>
+                                {unreadNotifications > 0 && (
+
+                                    <span className="notification-badge">
+
+                                        {unreadNotifications > 9
+                                            ? "9+"
+                                            : unreadNotifications}
+
+                                    </span>
+
+                                )}
+
+                            </button>
+
+
+                            {notificationOpen && (
+
+                                <div className="notification-dropdown">
+
+
+                                    {/* HEADER */}
+
+                                    <div className="notification-header">
+
+                                        <div>
+
+                                            <strong>
+                                                Notifications
+                                            </strong>
+
+                                            <span>
+                                                {unreadNotifications} unread
+                                            </span>
+
+                                        </div>
+
+
+                                        {unreadNotifications > 0 && (
+
+                                            <button
+                                                onClick={
+                                                    handleMarkAllNotificationsRead
+                                                }
+                                            >
+
+                                                Mark all read
+
+                                            </button>
+
+                                        )}
+
+                                    </div>
+
+
+                                    {/* BODY */}
+
+                                    <div className="notification-list">
+
+                                        {notificationLoading ? (
+
+                                            <p className="notification-empty">
+
+                                                Loading notifications...
+
+                                            </p>
+
+                                        ) : notifications.length === 0 ? (
+
+                                            <p className="notification-empty">
+
+                                                No notifications yet.
+
+                                            </p>
+
+                                        ) : (
+
+                                            notifications.map(
+                                                (notification) => (
+
+                                                    <button
+                                                        key={
+                                                            notification.id
+                                                        }
+                                                        className={`notification-item ${
+                                                            !notification.is_read
+                                                                ? "unread"
+                                                                : ""
+                                                        }`}
+                                                        onClick={() =>
+                                                            handleNotificationClick(
+                                                                notification
+                                                            )
+                                                        }
+                                                    >
+
+                                                        <div className="notification-dot" />
+
+
+                                                        <div className="notification-content">
+
+                                                            <strong>
+
+                                                                {
+                                                                    notification.title
+                                                                }
+
+                                                            </strong>
+
+
+                                                            <p>
+
+                                                                {
+                                                                    notification.message
+                                                                }
+
+                                                            </p>
+
+
+                                                            <span>
+
+                                                                {new Date(
+                                                                    notification.created_at
+                                                                ).toLocaleString(
+                                                                    "en-IN",
+                                                                    {
+                                                                        day: "numeric",
+                                                                        month: "short",
+                                                                        hour: "2-digit",
+                                                                        minute: "2-digit"
+                                                                    }
+                                                                )}
+
+                                                            </span>
+
+                                                        </div>
+
+                                                    </button>
+
+                                                )
+                                            )
+
+                                        )}
+
+                                    </div>
+
+                                </div>
+
+                            )}
+
+                        </div>
 
 
                         {/* PROFILE */}
 
-                      <button
-    className="top-avatar"
-    onClick={() =>
-        navigateTo("/profile")
-    }
->
-    JD
-</button>
+                        <button
+                            className="top-avatar"
+                            onClick={() =>
+                                navigateTo("/profile")
+                            }
+                        >
+
+                            JD
+
+                        </button>
 
                     </div>
 

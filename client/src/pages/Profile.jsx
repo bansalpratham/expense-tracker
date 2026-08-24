@@ -122,6 +122,12 @@ function Profile() {
     ] = useState(false)
 
 
+    const [
+        isNotificationOpen,
+        setIsNotificationOpen
+    ] = useState(false)
+
+
     /*
     ========================================
     EDIT PROFILE STATE
@@ -172,6 +178,22 @@ function Profile() {
 
     /*
     ========================================
+    NOTIFICATION STATE
+    ========================================
+    */
+
+    const [
+        notifications,
+        setNotifications
+    ] = useState({
+        expenseReminders: true,
+        budgetAlerts: true,
+        weeklySummary: false
+    })
+
+
+    /*
+    ========================================
     GET CURRENT USER
     ========================================
     */
@@ -187,6 +209,44 @@ function Profile() {
         }
 
     }, [dispatch, user])
+
+
+    /*
+    ========================================
+    LOAD NOTIFICATION SETTINGS
+    ========================================
+    */
+
+    useEffect(() => {
+
+        const savedNotifications =
+            localStorage.getItem(
+                "expenseflow_notifications"
+            )
+
+
+        if (savedNotifications) {
+
+            try {
+
+                setNotifications(
+                    JSON.parse(
+                        savedNotifications
+                    )
+                )
+
+            } catch (error) {
+
+                console.error(
+                    "Failed to load notification settings:",
+                    error
+                )
+
+            }
+
+        }
+
+    }, [])
 
 
     /*
@@ -420,6 +480,63 @@ function Profile() {
             setConfirmPassword("")
 
         }
+
+    }
+
+
+    /*
+    ========================================
+    OPEN NOTIFICATION SETTINGS
+    ========================================
+    */
+
+    const handleOpenNotifications = () => {
+
+        setIsNotificationOpen(true)
+
+    }
+
+
+    /*
+    ========================================
+    CLOSE NOTIFICATION SETTINGS
+    ========================================
+    */
+
+    const handleCloseNotifications = () => {
+
+        setIsNotificationOpen(false)
+
+    }
+
+
+    /*
+    ========================================
+    TOGGLE NOTIFICATION
+    ========================================
+    */
+
+    const handleNotificationChange = (
+        setting
+    ) => {
+
+        setNotifications((previous) => {
+
+            const updated = {
+                ...previous,
+                [setting]: !previous[setting]
+            }
+
+
+            localStorage.setItem(
+                "expenseflow_notifications",
+                JSON.stringify(updated)
+            )
+
+
+            return updated
+
+        })
 
     }
 
@@ -1118,6 +1235,8 @@ function Profile() {
                         <div className="settings-list">
 
 
+                            {/* EDIT PROFILE */}
+
                             <button
                                 className="settings-row"
                                 onClick={
@@ -1151,6 +1270,8 @@ function Profile() {
                             </button>
 
 
+                            {/* CHANGE PASSWORD */}
+
                             <button
                                 className="settings-row"
                                 onClick={
@@ -1183,12 +1304,12 @@ function Profile() {
                             </button>
 
 
+                            {/* NOTIFICATIONS */}
+
                             <button
                                 className="settings-row"
-                                onClick={() =>
-                                    alert(
-                                        "Notification settings coming soon"
-                                    )
+                                onClick={
+                                    handleOpenNotifications
                                 }
                             >
 
@@ -1454,7 +1575,9 @@ function Profile() {
                                         updateLoading
                                     }
                                 >
+
                                     Cancel
+
                                 </button>
 
 
@@ -1723,6 +1846,261 @@ function Profile() {
 
 
                         </form>
+
+                    </div>
+
+                </div>
+
+            )}
+
+
+            {/* ========================================
+                NOTIFICATION SETTINGS MODAL
+            ======================================== */}
+
+            {isNotificationOpen && (
+
+                <div
+                    className="profile-modal-overlay"
+                    onMouseDown={(event) => {
+
+                        if (
+                            event.target ===
+                            event.currentTarget
+                        ) {
+
+                            handleCloseNotifications()
+
+                        }
+
+                    }}
+                >
+
+                    <div className="profile-modal">
+
+
+                        {/* HEADER */}
+
+                        <div className="profile-modal-header">
+
+                            <div>
+
+                                <p className="section-kicker">
+                                    Preferences
+                                </p>
+
+                                <h2>
+                                    Notifications
+                                </h2>
+
+                                <p className="muted-copy">
+                                    Choose which ExpenseFlow
+                                    notifications you want to receive
+                                </p>
+
+                            </div>
+
+
+                            <button
+                                type="button"
+                                className="profile-modal-close"
+                                onClick={
+                                    handleCloseNotifications
+                                }
+                            >
+
+                                <X />
+
+                            </button>
+
+                        </div>
+
+
+                        {/* NOTIFICATION SETTINGS */}
+
+                        <div className="notification-settings">
+
+
+                            {/* EXPENSE REMINDERS */}
+
+                            <div className="notification-setting-row">
+
+                                <div className="notification-setting-left">
+
+                                    <div className="settings-icon">
+
+                                        <Bell />
+
+                                    </div>
+
+
+                                    <div>
+
+                                        <strong>
+                                            Expense reminders
+                                        </strong>
+
+                                        <span>
+                                            Get reminded about your
+                                            upcoming or pending expenses
+                                        </span>
+
+                                    </div>
+
+                                </div>
+
+
+                                <button
+                                    type="button"
+                                    className={
+                                        `notification-toggle ${
+                                            notifications.expenseReminders
+                                                ? "active"
+                                                : ""
+                                        }`
+                                    }
+                                    onClick={() =>
+                                        handleNotificationChange(
+                                            "expenseReminders"
+                                        )
+                                    }
+                                    aria-label="Toggle expense reminders"
+                                >
+
+                                    <span />
+
+                                </button>
+
+                            </div>
+
+
+                            {/* BUDGET ALERTS */}
+
+                            <div className="notification-setting-row">
+
+                                <div className="notification-setting-left">
+
+                                    <div className="settings-icon">
+
+                                        <CreditCard />
+
+                                    </div>
+
+
+                                    <div>
+
+                                        <strong>
+                                            Budget alerts
+                                        </strong>
+
+                                        <span>
+                                            Get notified when your
+                                            spending approaches your budget
+                                        </span>
+
+                                    </div>
+
+                                </div>
+
+
+                                <button
+                                    type="button"
+                                    className={
+                                        `notification-toggle ${
+                                            notifications.budgetAlerts
+                                                ? "active"
+                                                : ""
+                                        }`
+                                    }
+                                    onClick={() =>
+                                        handleNotificationChange(
+                                            "budgetAlerts"
+                                        )
+                                    }
+                                    aria-label="Toggle budget alerts"
+                                >
+
+                                    <span />
+
+                                </button>
+
+                            </div>
+
+
+                            {/* WEEKLY SUMMARY */}
+
+                            <div className="notification-setting-row">
+
+                                <div className="notification-setting-left">
+
+                                    <div className="settings-icon">
+
+                                        <CalendarDays />
+
+                                    </div>
+
+
+                                    <div>
+
+                                        <strong>
+                                            Weekly summary
+                                        </strong>
+
+                                        <span>
+                                            Receive a weekly overview
+                                            of your spending
+                                        </span>
+
+                                    </div>
+
+                                </div>
+
+
+                                <button
+                                    type="button"
+                                    className={
+                                        `notification-toggle ${
+                                            notifications.weeklySummary
+                                                ? "active"
+                                                : ""
+                                        }`
+                                    }
+                                    onClick={() =>
+                                        handleNotificationChange(
+                                            "weeklySummary"
+                                        )
+                                    }
+                                    aria-label="Toggle weekly summary"
+                                >
+
+                                    <span />
+
+                                </button>
+
+                            </div>
+
+
+                        </div>
+
+
+                        {/* FOOTER */}
+
+                        <div className="profile-modal-actions">
+
+                            <button
+                                type="button"
+                                className="primary-button"
+                                onClick={
+                                    handleCloseNotifications
+                                }
+                            >
+
+                                Done
+
+                            </button>
+
+                        </div>
+
 
                     </div>
 
