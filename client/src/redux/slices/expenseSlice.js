@@ -1,4 +1,7 @@
-import { createAsyncThunk, createSlice } from "@reduxjs/toolkit"
+import {
+    createAsyncThunk,
+    createSlice
+} from "@reduxjs/toolkit"
 
 import api from "../../services/api"
 
@@ -27,7 +30,9 @@ export const getExpenses = createAsyncThunk(
 
     async () => {
 
-        const response = await api.get("/getExpense")
+        const response = await api.get(
+            "/getExpense"
+        )
 
         return response.data
 
@@ -53,6 +58,39 @@ export const addExpense = createAsyncThunk(
 
         const response = await api.post(
             "/addExpense",
+            {
+                amount,
+                description,
+                date,
+                categoryId
+            }
+        )
+
+        return response.data
+
+    }
+)
+
+
+/*
+====================================================
+UPDATE EXPENSE
+====================================================
+*/
+
+export const updateExpense = createAsyncThunk(
+    "expense/updateExpense",
+
+    async ({
+        expenseId,
+        amount,
+        description,
+        date,
+        categoryId
+    }) => {
+
+        const response = await api.put(
+            `/updateExpense/${expenseId}`,
             {
                 amount,
                 description,
@@ -123,7 +161,9 @@ export const getDashboard = createAsyncThunk(
 
     async () => {
 
-        const response = await api.get("/dashboard")
+        const response = await api.get(
+            "/dashboard"
+        )
 
         return response.data
 
@@ -145,15 +185,10 @@ const expenseSlice = createSlice({
 
     reducers: {
 
-        /*
-        ================================================
-        CLEAR DATE FILTER
-        ================================================
-        */
-
         clearExpenseFilter: (state) => {
 
-            state.expenses = state.allExpenses
+            state.expenses =
+                state.allExpenses
 
         }
 
@@ -162,10 +197,11 @@ const expenseSlice = createSlice({
 
     extraReducers: (builder) => {
 
+
         /*
-        ================================================
+        ========================================
         GET EXPENSES
-        ================================================
+        ========================================
         */
 
         builder.addCase(
@@ -186,9 +222,11 @@ const expenseSlice = createSlice({
 
                 state.loading = false
 
-                state.allExpenses = action.payload
+                state.allExpenses =
+                    action.payload
 
-                state.expenses = action.payload
+                state.expenses =
+                    action.payload
 
             }
         )
@@ -208,9 +246,9 @@ const expenseSlice = createSlice({
 
 
         /*
-        ================================================
+        ========================================
         ADD EXPENSE
-        ================================================
+        ========================================
         */
 
         builder.addCase(
@@ -230,9 +268,46 @@ const expenseSlice = createSlice({
 
 
         /*
-        ================================================
+        ========================================
+        UPDATE EXPENSE
+        ========================================
+        */
+
+        builder.addCase(
+            updateExpense.fulfilled,
+            (state, action) => {
+
+                const updatedExpense =
+                    action.payload
+
+
+                state.allExpenses =
+                    state.allExpenses.map(
+                        expense =>
+                            expense.id ===
+                            updatedExpense.id
+                                ? updatedExpense
+                                : expense
+                    )
+
+
+                state.expenses =
+                    state.expenses.map(
+                        expense =>
+                            expense.id ===
+                            updatedExpense.id
+                                ? updatedExpense
+                                : expense
+                    )
+
+            }
+        )
+
+
+        /*
+        ========================================
         DELETE EXPENSE
-        ================================================
+        ========================================
         */
 
         builder.addCase(
@@ -259,16 +334,17 @@ const expenseSlice = createSlice({
 
 
         /*
-        ================================================
+        ========================================
         DATE FILTER
-        ================================================
+        ========================================
         */
 
         builder.addCase(
             getExpensesByDate.fulfilled,
             (state, action) => {
 
-                state.expenses = action.payload
+                state.expenses =
+                    action.payload
 
             }
         )

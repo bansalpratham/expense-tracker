@@ -369,4 +369,193 @@ return res.status(200).json({
     }
 }
 
-export { addExpense , getExpense , deleteExpense , getExpenseByDate ,getDashboard };
+const updateExpense = async (req, res) => {
+
+    try {
+
+        const userId = req.user.id
+        const { expenseId } = req.params
+
+        const {
+            amount,
+            description,
+            date,
+            categoryId
+        } = req.body
+
+
+        if (!userId) {
+            return res.status(400).json(
+                "UserId didn't found"
+            )
+        }
+
+
+        if (!expenseId) {
+            return res.status(400).json(
+                "ExpenseId didn't found"
+            )
+        }
+
+
+        if (!amount) {
+            return res.status(400).json(
+                "Amount didn't found"
+            )
+        }
+
+
+        if (!description) {
+            return res.status(400).json(
+                "Description didn't found"
+            )
+        }
+
+
+        if (!date) {
+            return res.status(400).json(
+                "Date didn't found"
+            )
+        }
+
+
+        if (!categoryId) {
+            return res.status(400).json(
+                "CategoryId didn't found"
+            )
+        }
+
+
+        /*
+        ========================================
+        CHECK CATEGORY
+        ========================================
+        */
+
+        const category = await pool.query(
+            `
+            SELECT *
+            FROM categories
+            WHERE id=$1
+            AND user_id=$2
+            `,
+            [
+                categoryId,
+                userId
+            ]
+        )
+
+
+        if (category.rows.length === 0) {
+
+            return res.status(400).json(
+                "Category not found"
+            )
+
+        }
+
+
+        /*
+        ========================================
+        UPDATE EXPENSE
+        ========================================
+        */
+
+        const result = await pool.query(
+            `
+            UPDATE expenses
+            SET
+                amount=$1,
+                description=$2,
+                date=$3,
+                category_id=$4
+            WHERE
+                id=$5
+                AND user_id=$6
+            RETURNING
+                id,
+                amount,
+                description,
+                date,
+                user_id,
+                category_id
+            `,
+            [
+                amount,
+                description,
+                date,
+                categoryId,
+                expenseId,
+                userId
+            ]
+        )
+
+
+        if (result.rows.length === 0) {
+
+            return res.status(404).json(
+                "Expense not found"
+            )
+
+        }
+
+
+        const updatedExpense =
+            result.rows[0]
+
+
+        /*
+        ========================================
+        NOTIFICATION
+        ========================================
+        */
+
+        await pool.query(
+            `
+            INSERT INTO notifications
+            (
+                user_id,
+                title,
+                message,
+                type
+            )
+            VALUES
+            ($1, $2, $3, $4)
+            `,
+            [
+                userId,
+                "Expense updated",
+                `You updated ₹${Number(amount).toFixed(2)} for ${description}.`,
+                "expense"
+            ]
+        )
+
+
+        return res.status(200).json(
+            updatedExpense
+        )
+
+
+    } catch (error) {
+
+        console.error(
+            "Update expense error:",
+            error
+        )
+
+        return res.status(500).json({
+            error: "UpdateExpense Error"
+        })
+
+    }
+
+}
+
+export {
+    addExpense,
+    getExpense,
+    deleteExpense,
+    updateExpense,
+    getExpenseByDate,
+    getDashboard
+}

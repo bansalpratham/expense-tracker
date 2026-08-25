@@ -1,4 +1,5 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
+
 import {
     CalendarDays,
     Check,
@@ -7,83 +8,250 @@ import {
     X
 } from "lucide-react"
 
+
 const today = () => {
-    return new Date().toISOString().slice(0, 10)
+
+    return new Date()
+        .toISOString()
+        .slice(0, 10)
+
 }
 
+
 function AddExpenseForm({
+
     categories = [],
+
     onSubmit,
+
     onCancel,
-    loading = false
+
+    loading = false,
+
+    mode = "add",
+
+    initialValues = null
+
 }) {
 
+
     const [values, setValues] = useState({
+
         amount: "",
+
         description: "",
+
         date: today(),
+
         categoryId: ""
+
     })
 
-    const [errors, setErrors] = useState({})
 
-    const update = (field, value) => {
+    const [errors, setErrors] =
+        useState({})
 
-        setValues((current) => ({
-            ...current,
-            [field]: value
-        }))
+
+    /*
+    ========================================
+    SET INITIAL VALUES
+    ========================================
+    */
+
+    useEffect(() => {
+
+        if (
+            mode === "edit" &&
+            initialValues
+        ) {
+
+            setValues({
+
+                amount:
+                    initialValues.amount ?? "",
+
+                description:
+                    initialValues.description ?? "",
+
+                date:
+                    initialValues.date
+                        ? String(
+                            initialValues.date
+                        ).slice(0, 10)
+                        : today(),
+
+                categoryId:
+                    initialValues.category_id ??
+                    initialValues.categoryId ??
+                    ""
+
+            })
+
+        } else {
+
+            setValues({
+
+                amount: "",
+
+                description: "",
+
+                date: today(),
+
+                categoryId: ""
+
+            })
+
+        }
+
+        setErrors({})
+
+    }, [
+        mode,
+        initialValues
+    ])
+
+
+    /*
+    ========================================
+    UPDATE FIELD
+    ========================================
+    */
+
+    const update = (
+        field,
+        value
+    ) => {
+
+        setValues(
+            (current) => ({
+
+                ...current,
+
+                [field]: value
+
+            })
+        )
+
 
         if (errors[field]) {
-            setErrors((current) => ({
-                ...current,
-                [field]: ""
-            }))
+
+            setErrors(
+                (current) => ({
+
+                    ...current,
+
+                    [field]: ""
+
+                })
+            )
+
         }
+
     }
+
+
+    /*
+    ========================================
+    VALIDATE
+    ========================================
+    */
 
     const validate = () => {
 
         const nextErrors = {}
 
-        if (!values.amount || Number(values.amount) <= 0) {
-            nextErrors.amount = "Enter an amount greater than zero."
+
+        if (
+            !values.amount ||
+            Number(values.amount) <= 0
+        ) {
+
+            nextErrors.amount =
+                "Enter an amount greater than zero."
+
         }
 
-        if (!values.description.trim()) {
-            nextErrors.description = "Add a short description."
+
+        if (
+            !values.description.trim()
+        ) {
+
+            nextErrors.description =
+                "Add a short description."
+
         }
+
 
         if (!values.date) {
-            nextErrors.date = "Choose a date."
+
+            nextErrors.date =
+                "Choose a date."
+
         }
 
+
         if (!values.categoryId) {
-            nextErrors.categoryId = "Select a category."
+
+            nextErrors.categoryId =
+                "Select a category."
+
         }
+
 
         setErrors(nextErrors)
 
-        return Object.keys(nextErrors).length === 0
+
+        return (
+            Object.keys(nextErrors).length === 0
+        )
+
     }
+
+
+    /*
+    ========================================
+    SUBMIT
+    ========================================
+    */
 
     const submit = (event) => {
 
         event.preventDefault()
 
-        if (loading) return
 
-        if (!validate()) return
+        if (loading) {
+            return
+        }
+
+
+        if (!validate()) {
+            return
+        }
+
 
         onSubmit({
+
             amount: values.amount,
-            description: values.description,
+
+            description:
+                values.description,
+
             date: values.date,
-            categoryId: values.categoryId
+
+            categoryId:
+                values.categoryId
+
         })
+
     }
 
+
+    const isEdit =
+        mode === "edit"
+
+
     return (
+
         <section
             style={{
                 width: "100%",
@@ -92,9 +260,11 @@ function AddExpenseForm({
                 borderRadius: "18px",
                 padding: "28px",
                 boxSizing: "border-box",
-                boxShadow: "0 12px 35px rgba(0,0,0,0.25)"
+                boxShadow:
+                    "0 12px 35px rgba(0,0,0,0.25)"
             }}
         >
+
 
             {/* HEADER */}
 
@@ -129,11 +299,14 @@ function AddExpenseForm({
                             flexShrink: 0
                         }}
                     >
+
                         <CircleDollarSign
                             size={22}
                             color="#39dca7"
                         />
+
                     </div>
+
 
                     <div>
 
@@ -144,61 +317,86 @@ function AddExpenseForm({
                                 fontSize: "12px",
                                 fontWeight: 600,
                                 letterSpacing: "0.08em",
-                                textTransform: "uppercase"
+                                textTransform:
+                                    "uppercase"
                             }}
                         >
-                            New transaction
+
+                            {isEdit
+                                ? "Edit transaction"
+                                : "New transaction"}
+
                         </p>
+
 
                         <h2
                             style={{
-                                margin: "4px 0 0",
+                                margin:
+                                    "4px 0 0",
                                 color: "#f1fff9",
                                 fontSize: "24px",
                                 fontWeight: 600
                             }}
                         >
-                            Add expense
+
+                            {isEdit
+                                ? "Edit expense"
+                                : "Add expense"}
+
                         </h2>
 
                     </div>
 
                 </div>
 
+
                 <button
                     type="button"
                     onClick={onCancel}
                     disabled={loading}
-                    aria-label="Close add expense form"
+                    aria-label="Close expense form"
                     style={{
                         width: "36px",
                         height: "36px",
                         borderRadius: "10px",
-                        border: "1px solid #1c3c32",
+                        border:
+                            "1px solid #1c3c32",
                         background: "#0a211b",
                         color: "#8aafa4",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
-                        cursor: loading ? "not-allowed" : "pointer",
+                        cursor:
+                            loading
+                                ? "not-allowed"
+                                : "pointer",
                         flexShrink: 0
                     }}
                 >
+
                     <X size={19} />
+
                 </button>
 
             </div>
 
+
             <p
                 style={{
-                    margin: "0 0 26px",
+                    margin:
+                        "0 0 26px",
                     color: "#789b91",
                     fontSize: "14px",
                     lineHeight: 1.6
                 }}
             >
-                Capture the details now and keep your spending history accurate.
+
+                {isEdit
+                    ? "Update the details of this expense and save your changes."
+                    : "Capture the details now and keep your spending history accurate."}
+
             </p>
+
 
             {/* FORM */}
 
@@ -210,10 +408,12 @@ function AddExpenseForm({
                 <div
                     style={{
                         display: "grid",
-                        gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                        gridTemplateColumns:
+                            "repeat(2, minmax(0, 1fr))",
                         gap: "20px"
                     }}
                 >
+
 
                     {/* AMOUNT */}
 
@@ -223,26 +423,51 @@ function AddExpenseForm({
                             htmlFor="expense-amount"
                             style={labelStyle}
                         >
-                            Amount <span style={requiredStyle}>*</span>
+
+                            Amount
+                            <span
+                                style={
+                                    requiredStyle
+                                }
+                            >
+                                *
+                            </span>
+
                         </label>
 
-                        <div style={inputWrapperStyle}>
+
+                        <div
+                            style={
+                                inputWrapperStyle
+                            }
+                        >
 
                             <span
                                 style={{
-                                    color: "#39dca7",
-                                    fontSize: "16px",
-                                    fontWeight: 600
+                                    color:
+                                        "#39dca7",
+                                    fontSize:
+                                        "16px",
+                                    fontWeight:
+                                        600
                                 }}
                             >
                                 ₹
                             </span>
 
+
                             <input
                                 id="expense-amount"
-                                value={values.amount}
-                                onChange={(event) =>
-                                    update("amount", event.target.value)
+                                value={
+                                    values.amount
+                                }
+                                onChange={(
+                                    event
+                                ) =>
+                                    update(
+                                        "amount",
+                                        event.target.value
+                                    )
                                 }
                                 type="number"
                                 min="0"
@@ -250,16 +475,26 @@ function AddExpenseForm({
                                 inputMode="decimal"
                                 placeholder="0.00"
                                 disabled={loading}
-                                style={inputStyle}
+                                style={
+                                    inputStyle
+                                }
                             />
 
                         </div>
 
+
                         {errors.amount && (
-                            <ErrorMessage message={errors.amount} />
+
+                            <ErrorMessage
+                                message={
+                                    errors.amount
+                                }
+                            />
+
                         )}
 
                     </div>
+
 
                     {/* DESCRIPTION */}
 
@@ -269,27 +504,54 @@ function AddExpenseForm({
                             htmlFor="expense-description"
                             style={labelStyle}
                         >
-                            Description <span style={requiredStyle}>*</span>
+
+                            Description
+                            <span
+                                style={
+                                    requiredStyle
+                                }
+                            >
+                                *
+                            </span>
+
                         </label>
+
 
                         <input
                             id="expense-description"
-                            value={values.description}
-                            onChange={(event) =>
-                                update("description", event.target.value)
+                            value={
+                                values.description
+                            }
+                            onChange={(
+                                event
+                            ) =>
+                                update(
+                                    "description",
+                                    event.target.value
+                                )
                             }
                             type="text"
                             maxLength={120}
                             placeholder="Lunch at college"
                             disabled={loading}
-                            style={fullInputStyle}
+                            style={
+                                fullInputStyle
+                            }
                         />
 
+
                         {errors.description && (
-                            <ErrorMessage message={errors.description} />
+
+                            <ErrorMessage
+                                message={
+                                    errors.description
+                                }
+                            />
+
                         )}
 
                     </div>
+
 
                     {/* DATE */}
 
@@ -299,40 +561,72 @@ function AddExpenseForm({
                             htmlFor="expense-date"
                             style={labelStyle}
                         >
-                            Date <span style={requiredStyle}>*</span>
+
+                            Date
+                            <span
+                                style={
+                                    requiredStyle
+                                }
+                            >
+                                *
+                            </span>
+
                         </label>
 
-                        <div style={dateWrapperStyle}>
+
+                        <div
+                            style={
+                                dateWrapperStyle
+                            }
+                        >
 
                             <input
                                 id="expense-date"
-                                value={values.date}
-                                onChange={(event) =>
-                                    update("date", event.target.value)
+                                value={
+                                    values.date
+                                }
+                                onChange={(
+                                    event
+                                ) =>
+                                    update(
+                                        "date",
+                                        event.target.value
+                                    )
                                 }
                                 type="date"
                                 disabled={loading}
                                 style={{
                                     ...inputStyle,
-                                    colorScheme: "dark"
+                                    colorScheme:
+                                        "dark"
                                 }}
                             />
+
 
                             <CalendarDays
                                 size={18}
                                 color="#6d9d8f"
                                 style={{
-                                    pointerEvents: "none"
+                                    pointerEvents:
+                                        "none"
                                 }}
                             />
 
                         </div>
 
+
                         {errors.date && (
-                            <ErrorMessage message={errors.date} />
+
+                            <ErrorMessage
+                                message={
+                                    errors.date
+                                }
+                            />
+
                         )}
 
                     </div>
+
 
                     {/* CATEGORY */}
 
@@ -342,53 +636,93 @@ function AddExpenseForm({
                             htmlFor="expense-category"
                             style={labelStyle}
                         >
-                            Category <span style={requiredStyle}>*</span>
+
+                            Category
+                            <span
+                                style={
+                                    requiredStyle
+                                }
+                            >
+                                *
+                            </span>
+
                         </label>
+
 
                         <select
                             id="expense-category"
-                            value={values.categoryId}
-                            onChange={(event) =>
-                                update("categoryId", event.target.value)
+                            value={
+                                values.categoryId
+                            }
+                            onChange={(
+                                event
+                            ) =>
+                                update(
+                                    "categoryId",
+                                    event.target.value
+                                )
                             }
                             disabled={loading}
-                            style={fullInputStyle}
+                            style={
+                                fullInputStyle
+                            }
                         >
 
                             <option value="">
                                 Select category
                             </option>
 
-                            {categories.map((category) => (
 
-                                <option
-                                    key={category.id}
-                                    value={category.id}
-                                >
-                                    {category.name}
-                                </option>
+                            {categories.map(
+                                (category) => (
 
-                            ))}
+                                    <option
+                                        key={
+                                            category.id
+                                        }
+                                        value={
+                                            category.id
+                                        }
+                                    >
+
+                                        {
+                                            category.name
+                                        }
+
+                                    </option>
+
+                                )
+                            )}
 
                         </select>
 
+
                         {errors.categoryId && (
-                            <ErrorMessage message={errors.categoryId} />
+
+                            <ErrorMessage
+                                message={
+                                    errors.categoryId
+                                }
+                            />
+
                         )}
 
                     </div>
 
                 </div>
 
-                {/* FOOTER BUTTONS */}
+
+                {/* FOOTER */}
 
                 <div
                     style={{
                         marginTop: "30px",
                         paddingTop: "22px",
-                        borderTop: "1px solid #153329",
+                        borderTop:
+                            "1px solid #153329",
                         display: "flex",
-                        justifyContent: "flex-end",
+                        justifyContent:
+                            "flex-end",
                         alignItems: "center",
                         gap: "12px"
                     }}
@@ -398,30 +732,53 @@ function AddExpenseForm({
                         type="button"
                         onClick={onCancel}
                         disabled={loading}
-                        style={secondaryButtonStyle}
+                        style={
+                            secondaryButtonStyle
+                        }
                     >
+
                         Cancel
+
                     </button>
+
 
                     <button
                         type="submit"
                         disabled={loading}
-                        style={primaryButtonStyle}
+                        style={
+                            primaryButtonStyle
+                        }
                     >
 
                         {loading ? (
+
                             <>
+
                                 <Loader2
                                     size={17}
                                     className="expense-spin"
                                 />
-                                Adding...
+
+                                {isEdit
+                                    ? "Saving..."
+                                    : "Adding..."}
+
                             </>
+
                         ) : (
+
                             <>
-                                <Check size={17} />
-                                Add expense
+
+                                <Check
+                                    size={17}
+                                />
+
+                                {isEdit
+                                    ? "Save changes"
+                                    : "Add expense"}
+
                             </>
+
                         )}
 
                     </button>
@@ -431,123 +788,218 @@ function AddExpenseForm({
             </form>
 
         </section>
+
     )
+
 }
 
 
 /* ------------------------------------------------ */
-/* REUSABLE STYLES */
+/* STYLES */
 /* ------------------------------------------------ */
 
 const labelStyle = {
+
     display: "block",
+
     marginBottom: "9px",
+
     color: "#c9ded8",
+
     fontSize: "13px",
+
     fontWeight: 600
+
 }
+
 
 const requiredStyle = {
+
     color: "#39dca7"
+
 }
+
 
 const inputWrapperStyle = {
+
     height: "48px",
+
     display: "flex",
+
     alignItems: "center",
+
     gap: "10px",
+
     padding: "0 14px",
+
     boxSizing: "border-box",
+
     background: "#091f19",
+
     border: "1px solid #1b3d32",
+
     borderRadius: "10px"
+
 }
+
 
 const dateWrapperStyle = {
+
     height: "48px",
+
     display: "flex",
+
     alignItems: "center",
+
     gap: "8px",
+
     padding: "0 14px",
+
     boxSizing: "border-box",
+
     background: "#091f19",
+
     border: "1px solid #1b3d32",
+
     borderRadius: "10px"
+
 }
+
 
 const inputStyle = {
+
     width: "100%",
+
     height: "100%",
+
     border: "none",
+
     outline: "none",
+
     background: "transparent",
+
     color: "#f1fff9",
+
     fontSize: "14px",
+
     fontFamily: "inherit",
+
     boxSizing: "border-box"
+
 }
+
 
 const fullInputStyle = {
+
     width: "100%",
+
     height: "48px",
+
     padding: "0 14px",
+
     boxSizing: "border-box",
+
     background: "#091f19",
+
     border: "1px solid #1b3d32",
+
     borderRadius: "10px",
+
     outline: "none",
+
     color: "#f1fff9",
+
     fontSize: "14px",
+
     fontFamily: "inherit"
+
 }
+
 
 const secondaryButtonStyle = {
+
     height: "42px",
+
     padding: "0 20px",
+
     borderRadius: "9px",
-    border: "1px solid #25473c",
+
+    border:
+        "1px solid #25473c",
+
     background: "#0a211b",
+
     color: "#aac4bc",
+
     fontSize: "14px",
+
     fontWeight: 600,
+
     cursor: "pointer"
+
 }
+
 
 const primaryButtonStyle = {
+
     height: "42px",
+
     padding: "0 20px",
+
     borderRadius: "9px",
+
     border: "none",
+
     background: "#35d9a4",
+
     color: "#04130e",
+
     display: "flex",
+
     alignItems: "center",
+
     justifyContent: "center",
+
     gap: "8px",
+
     fontSize: "14px",
+
     fontWeight: 700,
+
     cursor: "pointer"
+
 }
 
 
 /* ------------------------------------------------ */
-/* ERROR COMPONENT */
+/* ERROR */
 /* ------------------------------------------------ */
 
-function ErrorMessage({ message }) {
+function ErrorMessage({
+    message
+}) {
 
     return (
+
         <p
             style={{
-                margin: "6px 0 0",
-                color: "#ff7f8a",
-                fontSize: "12px"
+                margin:
+                    "6px 0 0",
+                color:
+                    "#ff7f8a",
+                fontSize:
+                    "12px"
             }}
             role="alert"
         >
+
             {message}
+
         </p>
+
     )
+
 }
+
 
 export default AddExpenseForm
